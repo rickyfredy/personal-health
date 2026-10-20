@@ -4,6 +4,7 @@ import { api } from './api';
 import Login from './pages/Login';
 import History from './pages/History';
 import Dashboard from './pages/Dashboard';
+import Trends from './pages/Trends';
 
 export default function App() {
   const [user, setUser] = useState(undefined); // undefined = still checking
@@ -46,6 +47,7 @@ export default function App() {
           <NavLink to="/" end>
             Dashboard
           </NavLink>
+          <NavLink to="/trends">Trends</NavLink>
           <NavLink to="/history">Consumption</NavLink>
         </nav>
         <div className="who">
@@ -59,6 +61,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/" element={<Dashboard />} />
+          <Route path="/trends" element={<Trends />} />
           <Route path="/history" element={<History />} />
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -47,5 +47,7 @@ export const api = {
   summaryMatrix: (params) =>
     request('/api/summary/matrix' + (params ? '?' + new URLSearchParams(params) : '')),
   summaryFeeds: (params) =>
-    request('/api/summary/feeds' + (params ? '?' + new URLSearchParams(params) : ''))
+    request('/api/summary/feeds' + (params ? '?' + new URLSearchParams(params) : '')),
+  summaryDaily: (params) =>
+    request('/api/summary/daily' + (params ? '?' + new URLSearchParams(params) : ''))
 };

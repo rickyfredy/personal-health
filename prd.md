@@ -81,36 +81,40 @@ Primary user is the household caretaker (single admin user). Key scenarios:
   minute past the neighbour. Editing the time directly is the other way to
   reorder.
 
-### 5.3 Dashboard
+### 5.3 Dashboard and Trends
 
-The dashboard is the default page (`/`) and first item in the menu.
+The dashboard is the default page (`/`) and first item in the menu. It is a
+focused, operational view with three cards only:
+
+- **"This week" table**: items as rows, Sunday→Saturday with day numbers as
+  columns, cells like `100 ml`, `-` when nothing was recorded; rows sorted
+  most-active-first; always all items. Paging buttons move to previous weeks
+  (up to ~2 years back) or forward (clamped to next week).
+- **Daily milk summary**: feed sessions of the latest day as
+  time → volume rows for the primary item (`DEFAULT_DASHBOARD_ITEM`, e.g.
+  "Peptamen junior"), plus a **total volume of the day** row. The day paging
+  steps back through record-days — days with no records are skipped rather
+  than shown empty. Sessions are groupings of items taken within the cart
+  window; only sessions containing the primary item appear, and volumes
+  cover just that item.
+- **Last-30-days primary-item chart**: daily volume bars for the primary
+  item, total for the period in the subtitle.
+
+Everything aggregated moved to a second page, **Trends**:
 
 - **Filter**: an item dropdown built from the distinct names that exist in
-  records (not free text). Defaults to `DEFAULT_DASHBOARD_ITEM` from `.env`
-  ("Peptamen junior" in the shipped config), matched case-insensitively;
-  "All items" clears it. Selection is an exact item match.
+  records (not free text), preselecting `DEFAULT_DASHBOARD_ITEM`; "All
+  items" clears it. Selection is an exact item match.
 - **Stat band**: today, last 7 days, last 30 days (record counts + units),
   and carts this week.
 - **Charts** (stacked per unit, since units can differ): daily for the last
   30 days, weekly for the last 8 ISO weeks (Monday start), monthly for the
   last 6 months.
-- **"This week" table**: items as rows, Sunday→Saturday with day numbers as
-  columns, cells like `100 ml`, `-` when nothing was recorded; rows sorted
-  most-active-first. Paging buttons move to previous weeks (up to ~2 years
-  back) or forward (clamped to next week). Title and date range update with
-  paging.
-- **Daily summary table**: feed sessions of one day as time → volume rows.
-  The day starts at the most recent day that has records (for the selected
-  item when filtered) and paging steps back through record-days — days with
-  no records are skipped rather than shown empty. Sessions are groupings of
-  items taken within the cart window (below). With an item selected, only
-  sessions containing that item appear, and volumes cover just that item;
-  with "All items", every session of the day appears.
 - **Cart summaries**: carts per week and per month (cart count, item count,
   volumes) plus a recent-carts detail list.
 - **Per-card updates**: paging (and Refresh) refetch each card's data
   independently via dedicated endpoints, so flipping weeks or days never
-  re-renders the charts and stats. The updating card dims briefly while its
+  re-renders neighbouring cards. The updating card dims briefly while its
   data reloads.
 - A "cart" is derived, not stored: walking records chronologically, a new
   cart starts whenever the gap to the previous record exceeds
@@ -184,6 +188,7 @@ the household clock.
 | GET    | `/api/summary`            | Day/week/month aggregates, cart summaries, stats |
 | GET    | `/api/summary/matrix`     | Weekly table; `week` offset paging |
 | GET    | `/api/summary/feeds`      | Daily summary; `day` offset paging |
+| GET    | `/api/summary/daily`      | Last 30 days as continuous buckets; optional `q` |
 
 ## 10. Acceptance criteria
 

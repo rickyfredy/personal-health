@@ -207,6 +207,32 @@ router.get('/feeds', async (req, res, next) => {
   }
 });
 
+// GET /api/summary/daily?q=
+// Last 30 wall-clock days as continuous buckets (zeros filled), for one exact
+// item or all items — powers the dashboard's 30-day milk volumes chart.
+router.get('/daily', async (req, res, next) => {
+  try {
+    const { q, nameCond, nameParams } = parseQ(req);
+    const now = localNow();
+    const dayStart = addDays(new Date(iso(now) + 'T00:00:00Z'), -29);
+    const [dailyRaw] = await db.query(
+      `SELECT DATE(consumption_time) AS d, measurement AS unit,
+              SUM(amount) AS total, COUNT(*) AS c
+       FROM consumption_history
+       WHERE consumption_time >= ?${nameCond}
+       GROUP BY d, unit`,
+      [iso(dayStart) + ' 00:00:00', ...nameParams]
+    );
+    const days = fillBuckets(
+      spanDates(dayStart, now, (d) => iso(d)),
+      groupBy(dailyRaw, 'd')
+    ).map(({ date, count, byUnit }) => ({ date, count, byUnit }));
+    res.json({ tz: TZ, filter: q || null, days });
+  } catch (err) {
+    next(err);
+  }
+});
+
 /* ---------- helpers ---------- */
 
 // Dummy-UTC wall-clock dates: Date objects whose UTC fields hold the

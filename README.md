@@ -62,7 +62,7 @@ npm --prefix client run dev                    # UI on :5173, proxies /api to :3
 | `SESSION_TTL_HOURS`   | How long a login lasts |
 | `DEFAULT_USERNAME` / `DEFAULT_PASSWORD` | Default account, created on first boot only |
 | `CART_WINDOW_MINUTES` | Gap that ends a "cart" grouping (see below) |
-| `DEFAULT_DASHBOARD_ITEM` | Item the dashboard filter starts on (case-insensitive match against existing names; empty = no default) |
+| `DEFAULT_DASHBOARD_ITEM` | The primary "milk" item: dashboard daily summary + 30-day volume chart use it, Trends filter preselects it (case-insensitive match against existing names; empty = no default) |
 
 ## What "cart" means here
 
@@ -106,6 +106,7 @@ Day/week/month grouping uses `APP_TIMEZONE` from `.env`.
 | GET    | `/api/summary`                | Day/week/month aggregates + cart summaries; optional `q=<exact item name>` (carts count whole if any item matches) |
 | GET    | `/api/summary/matrix`         | The "This week" table (items × Sun–Sat); optional `q`, `week=<offset, 0=today's week, -1=previous…>` |
 | GET    | `/api/summary/feeds`          | The daily summary card (volumes for one day, grouped like carts); optional `q`, `day=<record-days back from the most recent, 0=most recent>` |
+| GET    | `/api/summary/daily`          | Last 30 wall-clock days as continuous buckets; optional `q` (powers the 30-day milk volume chart) |
 
 All non-auth endpoints require the session cookie; server-rendered list
 ordering is always `consumption_time DESC`.
