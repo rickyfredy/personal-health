@@ -27,9 +27,9 @@ Goals for v1:
   search and filters.
 - Ordering derived from `consumption_time DESC`, with a way to change the
   order when a mistake was made.
-- A dashboard that summarises by day, week and month, includes a weekly
-  items-by-weekday table and a per-day volume summary, and tracks "carts" —
-  groupings of items taken together.
+- A focused dashboard: the current week's items-by-weekday table, the daily
+  milk summary (with the day's total volume) and a 30-day milk volume
+  chart; sessions group by the cart window.
 - Every runtime setting (database, port, timezone, session, defaults) lives
   in one `.env` file.
 
@@ -46,9 +46,9 @@ Primary user is the household caretaker (single admin user). Key scenarios:
    time (defaults to now).
 2. Each evening, scan the last-7-days list; search for a specific item;
    filter by unit; correct mistakes by editing or deleting records.
-3. Open the dashboard (the default page): check today/7-day/30-day stats,
-   the weekly milk table, and the per-day volumes; page back to see previous
-   weeks and days.
+3. Open the dashboard (the default page): scan the weekly table, the daily
+   milk summary and the 30-day milk chart; page back to see previous weeks
+   and the earlier days.
 
 ## 5. Feature requirements
 
@@ -81,9 +81,9 @@ Primary user is the household caretaker (single admin user). Key scenarios:
   minute past the neighbour. Editing the time directly is the other way to
   reorder.
 
-### 5.3 Dashboard and Trends
+### 5.3 Dashboard
 
-The dashboard is the default page (`/`) and first item in the menu. It is a
+The dashboard is the default page (`/`) and first item in the menu — a
 focused, operational view with three cards only:
 
 - **"This week" table**: items as rows, Sunday→Saturday with day numbers as
@@ -92,34 +92,24 @@ focused, operational view with three cards only:
   (up to ~2 years back) or forward (clamped to next week).
 - **Daily milk summary**: feed sessions of the latest day as
   time → volume rows for the primary item (`DEFAULT_DASHBOARD_ITEM`, e.g.
-  "Peptamen junior"), plus a **total volume of the day** row. The day paging
+  "Peptamen junior"), plus a **total volume of the day** row. Day paging
   steps back through record-days — days with no records are skipped rather
   than shown empty. Sessions are groupings of items taken within the cart
-  window; only sessions containing the primary item appear, and volumes
-  cover just that item.
+  window (see the cart definition below); only sessions containing the
+  primary item appear, and volumes cover just that item.
 - **Last-30-days primary-item chart**: daily volume bars for the primary
-  item, total for the period in the subtitle.
-
-Everything aggregated moved to a second page, **Trends**:
-
-- **Filter**: an item dropdown built from the distinct names that exist in
-  records (not free text), preselecting `DEFAULT_DASHBOARD_ITEM`; "All
-  items" clears it. Selection is an exact item match.
-- **Stat band**: today, last 7 days, last 30 days (record counts + units),
-  and carts this week.
-- **Charts** (stacked per unit, since units can differ): daily for the last
-  30 days, weekly for the last 8 ISO weeks (Monday start), monthly for the
-  last 6 months.
-- **Cart summaries**: carts per week and per month (cart count, item count,
-  volumes) plus a recent-carts detail list.
+  item, with the 30-day total in the subtitle.
 - **Per-card updates**: paging (and Refresh) refetch each card's data
   independently via dedicated endpoints, so flipping weeks or days never
   re-renders neighbouring cards. The updating card dims briefly while its
   data reloads.
-- A "cart" is derived, not stored: walking records chronologically, a new
-  cart starts whenever the gap to the previous record exceeds
-  `CART_WINDOW_MINUTES` (default 15). A cart appears under an item filter if
-  any item in it matches.
+- **Cart definition**: a cart is derived, not stored — walking records
+  chronologically, a new cart starts whenever the gap to the previous record
+  exceeds `CART_WINDOW_MINUTES` (default 15).
+
+Superseded (ricky, 2026-10-21): the earlier Trends page — stat band, day/
+week/month charts, cart weekly/monthly summaries, recent-carts list and the
+item dropdown — was removed by request.
 
 ### 5.4 Configuration
 
@@ -150,8 +140,8 @@ the household clock.
 - **Backend** (`server/`): Node.js + Express. mysql2 connection pool
   (`dateStrings: true`), express-session with a MySQL session store, bcryptjs
   for passwords. REST API under `/api`: auth, consumptions (list with
-  paging/search/filter, CRUD, move), summary (base), summary/matrix,
-  summary/feeds, plus `/api/consumptions/meta` for filter options.
+  paging/search/filter, CRUD, move), summary/matrix, summary/feeds,
+  summary/daily, plus `/api/consumptions/meta` for filter options.
 - **Frontend** (`client/`): React 18 + Vite SPA with react-router and
   recharts; built to `client/dist` and served by the same Express process in
   production (dev mode uses the Vite dev server proxying `/api`).
@@ -185,7 +175,6 @@ the household clock.
 | PUT    | `/api/consumptions/:id`   | Update record |
 | DELETE | `/api/consumptions/:id`   | Delete record |
 | POST   | `/api/consumptions/:id/move` | Reorder (`direction` up/down) |
-| GET    | `/api/summary`            | Day/week/month aggregates, cart summaries, stats |
 | GET    | `/api/summary/matrix`     | Weekly table; `week` offset paging |
 | GET    | `/api/summary/feeds`      | Daily summary; `day` offset paging |
 | GET    | `/api/summary/daily`      | Last 30 days as continuous buckets; optional `q` |
@@ -202,9 +191,9 @@ the household clock.
    invalid dates.
 4. Up/down arrows visibly reorder rows while the consumption_time DESC
    ordering rule stays intact.
-5. The dashboard opens by default; the item dropdown defaults to the
-   configured item; the weekly table and daily summary match manual SQL
-   spot-checks; paging moves both tables without re-rendering the charts.
+5. The dashboard opens by default with its three cards; the weekly table
+   and daily summary match manual SQL spot-checks; paging moves one table
+   without re-rendering its neighbours.
 6. `.env` never appears in `git status` or in the repository.
 7. Running the seed script twice does not create duplicates.
 

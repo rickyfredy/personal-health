@@ -4,102 +4,14 @@ const { localNow, TZ } = require('../time');
 
 const router = express.Router();
 
-// GET /api/summary          → time buckets (day/week/month), carts, stats
 // GET /api/summary/matrix   → the "This week" table (items × Sun..Sat)
 // GET /api/summary/feeds    → the daily summary (one day's sessions + volumes)
-// Split so the dashboard can page the two tables without refetching charts.
+// GET /api/summary/daily    → last 30 wall-clock days as continuous buckets
+// Separate endpoints so each dashboard card fetches/pages independently.
 //
 // A cart = records within CART_WINDOW_MINUTES of each other (derived, no
 // schema change). A name filter (?q=) is an exact, case-insensitive item
-// name; carts count whole when any item in them matches.
-
-router.get('/', async (req, res, next) => {
-  try {
-    const { q, nameCond, nameParams, ql } = parseQ(req);
-    const { windowMinutes, windowMs } = cartWindow();
-
-    const now = localNow();
-    const isoStart = iso(now);
-
-    // ---------- daily: last 30 wall-clock days ----------
-    const dayStart = addDays(new Date(isoStart + 'T00:00:00Z'), -29);
-    const [dailyRaw] = await db.query(
-      `SELECT DATE(consumption_time) AS d, measurement AS unit,
-              SUM(amount) AS total, COUNT(*) AS c
-       FROM consumption_history
-       WHERE consumption_time >= ?${nameCond}
-       GROUP BY d, unit`,
-      [iso(dayStart) + ' 00:00:00', ...nameParams]
-    );
-    const dailyList = fillBuckets(
-      spanDates(dayStart, now, (d) => iso(d)),
-      groupBy(dailyRaw, 'd')
-    ).map(({ date, count, byUnit }) => ({ date, count, byUnit }));
-
-    // ---------- weekly: last 8 ISO weeks (Monday start) ----------
-    const thisWeekStart = isoWeekStart(now);
-    const weekKeys = [];
-    for (let i = 7; i >= 0; i--) weekKeys.push(isoWeekKey(addDays(thisWeekStart, -7 * i)));
-    const [weeklyRaw] = await db.query(
-      `SELECT YEARWEEK(consumption_time, 3) AS wk, measurement AS unit,
-              SUM(amount) AS total, COUNT(*) AS c
-       FROM consumption_history
-       WHERE consumption_time >= ?${nameCond}
-       GROUP BY wk, unit`,
-      [iso(addDays(thisWeekStart, -49)) + ' 00:00:00', ...nameParams]
-    );
-    const weeklyList = fillWeeks(weekKeys, groupBy(weeklyRaw, 'wk'));
-
-    // ---------- monthly: last 6 calendar months ----------
-    const { keys: monthKeys, from: monthFrom } = monthHorizon(now);
-    const [monthlyRaw] = await db.query(
-      `SELECT DATE_FORMAT(consumption_time, '%Y-%m') AS m, measurement AS unit,
-              SUM(amount) AS total, COUNT(*) AS c
-       FROM consumption_history
-       WHERE consumption_time >= ?${nameCond}
-       GROUP BY m, unit`,
-      [monthFrom, ...nameParams]
-    );
-    const monthlyList = fillMonths(monthKeys, groupBy(monthlyRaw, 'm'));
-
-    // ---------- carts & rollups ----------
-    const carts = await buildCarts(monthFrom, windowMs);
-    const matchedCarts = ql
-      ? carts.filter((c) => c.items.some((it) => it.name.toLowerCase() === ql))
-      : carts;
-
-    const cartWeekly = fillContainers(weekKeys, matchedCarts, 'wk');
-    const cartMonthly = fillContainers(monthKeys, matchedCarts, 'm');
-    const recentCarts = matchedCarts
-      .slice(-8)
-      .reverse()
-      .map(({ _start, ...c }) => ({ ...c, byUnit: sumUnits(c.items) }));
-
-    // ---------- headline stats ----------
-    const todayBucket = dailyList[dailyList.length - 1] || { count: 0, byUnit: {} };
-    const stats = {
-      todayCount: todayBucket.count,
-      todayByUnit: todayBucket.byUnit,
-      week7: sumDaily(dailyList.slice(-7)),
-      month30: sumDaily(dailyList)
-    };
-
-    res.json({
-      tz: TZ,
-      filter: q || null,
-      cartWindowMinutes: windowMinutes,
-      daily: dailyList,
-      weekly: weeklyList,
-      monthly: monthlyList,
-      cartWeekly,
-      cartMonthly,
-      recentCarts,
-      stats
-    });
-  } catch (err) {
-    next(err);
-  }
-});
+// name.
 
 // GET /api/summary/matrix?week=N
 // week: 0 = current Sunday-start week, -1 = previous, ...
@@ -333,74 +245,9 @@ function fillBuckets(keys, map) {
   return keys.map((k) => ({ ...(map.get(k) || emptyBucket()), date: k }));
 }
 
-function fillWeeks(keys, map) {
-  return keys.map((key) => ({
-    key,
-    ...(map.get(String(key.slice(0, 4) + String(parseInt(key.slice(6), 10)).padStart(2, '0'))) || {})
-  }));
-}
-
-function fillMonths(keys, map) {
-  return keys.map((key) => ({ key, ...(map.get(key) || {}) }));
-}
-
-// carts -> weekly/monthly rollups keyed by the cart's start time
-function fillContainers(keys, carts, dim) {
-  const map = new Map(keys.map((k) => [k, { carts: 0, items: 0, byUnit: {} }]));
-  for (const c of carts) {
-    const key =
-      dim === 'wk'
-        ? isoWeekKey(c._start)
-        : c._start.getUTCFullYear() + '-' + String(c._start.getUTCMonth() + 1).padStart(2, '0');
-    const bucket = map.get(key);
-    if (!bucket) continue; // cart before summary horizon
-    bucket.carts += 1;
-    bucket.items += c.items.length;
-    for (const it of c.items) bucket.byUnit[it.unit] = round2((bucket.byUnit[it.unit] || 0) + it.amount);
-  }
-  return keys.map((key) => ({ key, ...(map.get(key) || {}) }));
-}
-
-function isoWeekStart(d) {
-  const date = new Date(iso(d) + 'T00:00:00Z');
-  const day = date.getUTCDay() || 7; // Mon = 1 ... Sun = 7
-  if (day !== 1) date.setUTCDate(date.getUTCDate() - (day - 1));
-  return date;
-}
-
-// ISO-8601 week number: Thursday-based, handles year rollover correctly.
-function isoWeekInfo(d) {
-  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-  const day = (date.getUTCDay() + 6) % 7; // Mon = 0 ... Sun = 6
-  date.setUTCDate(date.getUTCDate() - day + 3); // Thursday of this ISO week
-  const isoYear = date.getUTCFullYear();
-  const jan4 = new Date(Date.UTC(isoYear, 0, 4));
-  jan4.setUTCDate(jan4.getUTCDate() - ((jan4.getUTCDay() + 6) % 7) + 3); // Thursday of ISO week 1
-  const week = 1 + Math.round((date.getTime() - jan4.getTime()) / (7 * 86400000));
-  return { year: isoYear, week };
-}
-
-function isoWeekNum(d) {
-  return isoWeekInfo(d).week;
-}
-
-function isoWeekKey(d) {
-  const { year, week } = isoWeekInfo(d);
-  return `${year}-W${String(week).padStart(2, '0')}`;
-}
-
 function cartKey(d) {
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
-}
-
-function sumDaily(list) {
-  const out = { count: 0, byUnit: {} };
-  for (const b of list) {
-    out.count += b.count || 0;
-    for (const [u, v] of Object.entries(b.byUnit || {})) out.byUnit[u] = round2((out.byUnit[u] || 0) + v);
-  }
-  return out;
 }
 
 module.exports = router;

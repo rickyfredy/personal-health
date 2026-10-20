@@ -37,67 +37,10 @@ export function dayNum(date) {
   return Number(date.split('-')[2]);
 }
 
-export function monthLabel(key) {
-  const [y, m] = key.split('-').map(Number);
-  return `${MONTHS[m - 1]} ${String(y).slice(2)}`;
-}
-
-export function whenLabel(s) {
-  // "2026-10-14 09:05" -> "14 Oct · 09:05"
-  const [date, time] = s.split(' ');
-  const [, m, d] = date.split('-').map(Number);
-  return `${d} ${MONTHS[m - 1]} · ${time}`;
-}
-
-export function collectUnits(data) {
-  const set = new Set();
-  for (const sec of ['daily', 'weekly', 'monthly']) {
-    for (const b of data[sec]) for (const u of Object.keys(b.byUnit || {})) set.add(u);
-  }
-  return [...set].sort();
-}
-
 export function collectUnitsOfDays(days) {
   const set = new Set();
   for (const b of days) for (const u of Object.keys(b.byUnit || {})) set.add(u);
   return [...set].sort();
-}
-
-/* ---------- stat band ---------- */
-
-export function StatBand({ data }) {
-  const unitSums = (byUnit) =>
-    Object.entries(byUnit)
-      .map(([u, v]) => `${fmtNum(v)} ${u}`)
-      .join('  ·  ') || '—';
-  const w = data.cartWeekly[data.cartWeekly.length - 1] || { carts: 0, items: 0 };
-
-  return (
-    <div className="statband">
-      <div className="stat">
-        <div className="label">Today</div>
-        <div className="value">{data.stats.todayCount}</div>
-        <div className="sub">{unitSums(data.stats.todayByUnit)}</div>
-      </div>
-      <div className="stat">
-        <div className="label">Last 7 days</div>
-        <div className="value">{data.stats.week7.count}</div>
-        <div className="sub">{unitSums(data.stats.week7.byUnit)}</div>
-      </div>
-      <div className="stat">
-        <div className="label">Last 30 days</div>
-        <div className="value">{data.stats.month30.count}</div>
-        <div className="sub">{unitSums(data.stats.month30.byUnit)}</div>
-      </div>
-      <div className="stat">
-        <div className="label">Carts this week</div>
-        <div className="value">{w.carts}</div>
-        <div className="sub">
-          {w.items} items{w.carts ? ` · ${(w.items / w.carts).toFixed(1)} per cart` : ''}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 /* ---------- charts ---------- */
@@ -326,44 +269,4 @@ function DailyFeeds({ feeds, filterName }) {
   );
 }
 
-/* ---------- shopping-cart style summaries ---------- */
-
-export function CartRows({ buckets, isWeek }) {
-  const maxItems = Math.max(1, ...buckets.map((b) => b.items));
-  return (
-    <div className="cart-rows">
-      {buckets.map((b) => (
-        <div className="cart-row" key={b.key}>
-          <span className="when">{isWeek ? `W${b.key.slice(6)}` : monthLabel(b.key)}</span>
-          <span className="counts">
-            {b.carts} cart{b.carts === 1 ? '' : 's'} · {b.items} item{b.items === 1 ? '' : 's'}
-          </span>
-          <span className="bar">
-            <i style={{ width: `${(b.items / maxItems) * 100}%` }} />
-          </span>
-          <span className="units">{unitText(b.byUnit)}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export function CartDetail({ carts }) {
-  return (
-    <div className="cart-rows">
-      {carts.map((c) => (
-        <div className="cart-row" key={c.start}>
-          <span className="when">{whenLabel(c.start)}</span>
-          <span className="counts">{c.items.length} item{c.items.length === 1 ? '' : 's'}</span>
-          <ul className="cart-items">
-            {c.items.map((it) => (
-              <li className="chip" key={it.id}>
-                {it.name} {fmtNum(it.amount)} {it.unit}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
-  );
-}
+/* ---------- summary: end of shared cards ---------- */

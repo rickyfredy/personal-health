@@ -42,8 +42,6 @@ export const api = {
   moveConsumption: (id, direction) =>
     request(`/api/consumptions/${id}/move`, { method: 'POST', body: JSON.stringify({ direction }) }),
 
-  summary: (params) =>
-    request('/api/summary' + (params ? '?' + new URLSearchParams(params) : '')),
   summaryMatrix: (params) =>
     request('/api/summary/matrix' + (params ? '?' + new URLSearchParams(params) : '')),
   summaryFeeds: (params) =>
