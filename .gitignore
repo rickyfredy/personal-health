@@ -1,0 +1,15 @@
+# ── secrets & local config (never commit these) ──────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── dependencies & build output ───────────────────────────────────────────────
+node_modules/
+client/dist/
+
+# ── logs & OS noise ───────────────────────────────────────────────────────────
+*.log
+.DS_Store
+Thumbs.db
+# vite config cache
+client/vite.config.js.timestamp-*.mjs
