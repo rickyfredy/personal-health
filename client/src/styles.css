@@ -796,6 +796,11 @@ tbody tr:hover {
   font-weight: 600;
 }
 
+.matrix td.rowno {
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- responsive ---------- */
 
 @media (max-width: 960px) {

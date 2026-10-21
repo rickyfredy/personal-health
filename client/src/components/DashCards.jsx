@@ -246,13 +246,15 @@ function DailyFeeds({ feeds, filterName }) {
       <table className="matrix">
         <thead>
           <tr>
+            <th className="c" style={{ width: 44 }}>No.</th>
             <th>Feed time</th>
             <th className="c">Volume</th>
           </tr>
         </thead>
         <tbody>
-          {feeds.rows.map((r) => (
+          {feeds.rows.map((r, i) => (
             <tr key={r.time}>
+              <td className="c rowno">{i + 1}</td>
               <td className="cell-amount">{r.time}</td>
               <td className="c cell-amount">
                 {unitText(r.byUnit) === '—' ? '-' : unitText(r.byUnit)}
@@ -260,6 +262,7 @@ function DailyFeeds({ feeds, filterName }) {
             </tr>
           ))}
           <tr className="total-row">
+            <td className="c" />
             <td className="cell-amount">Total</td>
             <td className="c cell-amount">{unitText(totals)}</td>
           </tr>

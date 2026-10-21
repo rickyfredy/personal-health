@@ -90,7 +90,7 @@ focused, operational view with three cards only:
   columns, cells like `100 ml`, `-` when nothing was recorded; rows sorted
   most-active-first; always all items. Paging buttons move to previous weeks
   (up to ~2 years back) or forward (clamped to next week).
-- **Daily milk summary**: feed sessions of the latest day as
+- **Daily milk summary**: feed sessions of the latest day as numbered
   time → volume rows for the primary item (`DEFAULT_DASHBOARD_ITEM`, e.g.
   "Peptamen junior"), plus a **total volume of the day** row. Day paging
   steps back through record-days — days with no records are skipped rather
