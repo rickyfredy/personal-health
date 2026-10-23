@@ -100,9 +100,9 @@ focused, operational view with three cards only:
   and volumes cover just that item.
 - **"Last 30 days · Milk" chart**: daily volume bars for the primary item,
   with the 30-day total in the subtitle.
-- **"Daily Milk Consumption"**: every record of a chosen day — milk AND
-  medicine — each with its consumption time, sorted earliest first and
-  numbered. The day is chosen with a date picker plus ‹ Prev / Next ›
+- **"Daily Milk & Medecine Consumption"**: every record of a chosen day —
+  milk AND medicine — each with its consumption time, sorted earliest first
+  and numbered. The day is chosen with a date picker plus ‹ Prev / Next ›
   arrows; defaults to today.
 - **Per-card updates**: paging (and Refresh) refetch each card's data
   independently via dedicated endpoints, so flipping weeks or days never

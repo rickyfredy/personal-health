@@ -205,7 +205,7 @@ export default function Dashboard() {
 
         <div className="chart-card wide">
           <div className="card-head">
-            <h2>Daily Milk Consumption</h2>
+            <h2>Daily Milk &amp; Medecine Consumption</h2>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <button
                 className="pagebtn"
