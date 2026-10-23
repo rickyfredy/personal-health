@@ -58,8 +58,9 @@ export default function History() {
   }
 
   useEffect(() => {
+    // refetch whenever the filter set changes (load(filters) reads
+    // the current values; deliberately not memo-wrapped)
     load(filters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   async function moveTo(id, direction) {
