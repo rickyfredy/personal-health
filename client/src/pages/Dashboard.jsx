@@ -5,6 +5,7 @@ import {
   DailyFeedsCard,
   WeekMatrixCard,
   collectUnitsOfDays,
+  fmtNum,
   shortDay,
   unitText
 } from '../components/DashCards';
