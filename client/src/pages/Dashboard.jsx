@@ -32,6 +32,34 @@ export default function Dashboard() {
   const [daily, setDaily] = useState(null);
   const [dailyLoading, setDailyLoading] = useState(true);
 
+  // every record of a chosen day (milk + medicine) — own fetch
+  const [viewDate, setViewDate] = useState(() => new Date().toLocaleDateString('sv-SE'));
+  const [dayRecords, setDayRecords] = useState(null);
+  const [recordsLoading, setRecordsLoading] = useState(true);
+
+  useEffect(() => {
+    let live = true;
+    setRecordsLoading(true);
+    api
+      .listConsumptions({
+        range: 'custom',
+        from: viewDate,
+        to: viewDate,
+        pageSize: 100,
+        sort: 'consumption_time',
+        dir: 'asc'
+      })
+      .then((d) => {
+        if (!live) return;
+        setDayRecords(d);
+        setRecordsLoading(false);
+      })
+      .catch(() => live && setRecordsLoading(false));
+    return () => {
+      live = false;
+    };
+  }, [reload, viewDate]);
+
   useEffect(() => {
     document.title = 'Callista · dashboard';
   }, []);
@@ -100,7 +128,6 @@ export default function Dashboard() {
     };
   }, [reload, milkItem]);
 
-  const milkLabel = milkItem || 'all items';
   const chartData = daily ? daily.days.map((b) => ({ name: shortDay(b.date), ...b.byUnit })) : [];
   const chartUnits = daily ? collectUnitsOfDays(daily.days) : [];
   const chartTotals = {};
@@ -111,6 +138,13 @@ export default function Dashboard() {
       }
     }
   }
+
+  // shift a YYYY-MM-DD date by n calendar days (UTC-noon arithmetic)
+  const dayShift = (date, n) => {
+    const d = new Date(date + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
+  };
 
   return (
     <>
@@ -149,12 +183,12 @@ export default function Dashboard() {
           dayOffset={dayOffset}
           onDay={setDayOffset}
           filterName={milkItem || null}
-          title={milkItem ? `Daily ${milkItem} summary` : 'Daily feeds'}
+          title="Daily Milk Summary"
         />
 
         <div className="chart-card">
           <div className="card-head">
-            <h2>{milkItem ? `Last 30 days · ${milkLabel}` : 'Last 30 days'}</h2>
+            <h2>Last 30 days · Milk</h2>
           </div>
           <div className="sub">
             {daily
@@ -165,6 +199,78 @@ export default function Dashboard() {
           </div>
           <div className="fade-wrap" style={{ opacity: dailyLoading ? 0.45 : 1 }}>
             {daily && <Chart data={chartData} units={chartUnits} />}
+          </div>
+        </div>
+
+        <div className="chart-card wide">
+          <div className="card-head">
+            <h2>Daily Milk Consumption</h2>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <button
+                className="pagebtn"
+                onClick={() => setViewDate(dayShift(viewDate, -1))}
+                title="Previous day"
+              >
+                ‹ Prev
+              </button>
+              <input
+                type="date"
+                className="input"
+                style={{ height: 28, padding: '2px 8px', fontSize: 13 }}
+                value={viewDate}
+                onChange={(e) => e.target.value && setViewDate(e.target.value)}
+                aria-label="Pick a day"
+              />
+              <button
+                className="pagebtn"
+                onClick={() => setViewDate(dayShift(viewDate, 1))}
+                title="Next day"
+              >
+                Next ›
+              </button>
+            </div>
+          </div>
+          <div className="sub">
+            {shortDay(viewDate)} · milk and medicine ·{' '}
+            {dayRecords
+              ? `all ${fmtNum(dayRecords.total)} record${dayRecords.total === 1 ? '' : 's'} of the day, earliest first`
+              : 'loading…'}
+          </div>
+          <div className="fade-wrap" style={{ opacity: recordsLoading ? 0.45 : 1 }}>
+            {dayRecords &&
+              (dayRecords.rows.length ? (
+                <div className="table-wrap" style={{ padding: '6px 0 12px' }}>
+                  <table className="matrix">
+                    <thead>
+                      <tr>
+                        <th className="c" style={{ width: 44 }}>
+                          No.
+                        </th>
+                        <th>Item</th>
+                        <th className="c">Amount</th>
+                        <th className="c">Time</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dayRecords.rows.map((r, i) => (
+                        <tr key={r.id}>
+                          <td className="c rowno">{i + 1}</td>
+                          <td className="cell-name">{r.name}</td>
+                          <td className="c cell-amount">
+                            {fmtNum(r.amount)} {r.measurement}
+                          </td>
+                          <td className="c cell-amount">{r.consumption_time.slice(11, 16)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="empty">
+                  <div className="big">No records that day</div>
+                  <div>{shortDay(viewDate)} has nothing logged — use ‹ Prev to go earlier.</div>
+                </div>
+              ))}
           </div>
         </div>
       </div>

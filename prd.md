@@ -90,15 +90,20 @@ focused, operational view with three cards only:
   columns, cells like `100 ml`, `-` when nothing was recorded; rows sorted
   most-active-first; always all items. Paging buttons move to previous weeks
   (up to ~2 years back) or forward (clamped to next week).
-- **Daily milk summary**: feed sessions of the latest day as numbered
-  time → volume rows for the primary item (`DEFAULT_DASHBOARD_ITEM`, e.g.
-  "Peptamen junior"), plus a **total volume of the day** row. Day paging
-  steps back through record-days — days with no records are skipped rather
-  than shown empty. Sessions are groupings of items taken within the cart
-  window (see the cart definition below); only sessions containing the
-  primary item appear, and volumes cover just that item.
-- **Last-30-days primary-item chart**: daily volume bars for the primary
-  item, with the 30-day total in the subtitle.
+- **"Daily Milk Summary"** (labelled per ricky; the volume itself follows
+  `DEFAULT_DASHBOARD_ITEM`): the latest day's feed sessions as numbered
+  time → volume rows for the primary item (e.g. "Peptamen junior"), plus a
+  **total volume of the day** row. Day paging steps back through
+  record-days — days with no records are skipped rather than shown empty.
+  Sessions are groupings of items taken within the cart window (see the
+  cart definition below); only sessions containing the primary item appear,
+  and volumes cover just that item.
+- **"Last 30 days · Milk" chart**: daily volume bars for the primary item,
+  with the 30-day total in the subtitle.
+- **"Daily Milk Consumption"**: every record of a chosen day — milk AND
+  medicine — each with its consumption time, sorted earliest first and
+  numbered. The day is chosen with a date picker plus ‹ Prev / Next ›
+  arrows; defaults to today.
 - **Per-card updates**: paging (and Refresh) refetch each card's data
   independently via dedicated endpoints, so flipping weeks or days never
   re-renders neighbouring cards. The updating card dims briefly while its
