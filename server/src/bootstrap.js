@@ -30,16 +30,17 @@ async function bootstrap() {
     console.log(`[bootstrap] created default user "${DEFAULT_USER}"`);
   }
 
-  // NGT tube changes: changed_at = wall-clock moment of the change (same
-  // convention as consumption_history.consumption_time), note = optional.
+  // NGT tube changes: written by an external channel, which uses this exact
+  // shape (measurement = tube size, consumption_time = when it was changed).
+  // Collation omited so each server applies its own default.
   await db.query(`
     CREATE TABLE IF NOT EXISTS ngt_history (
       id INT NOT NULL AUTO_INCREMENT,
-      changed_at DATETIME NOT NULL,
-      note VARCHAR(100) NULL,
-      created_at DATETIME NOT NULL,
+      measurement DECIMAL(4,2) NULL,
+      consumption_time DATETIME NULL,
+      created_at DATETIME NULL,
       PRIMARY KEY (id)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 }
 

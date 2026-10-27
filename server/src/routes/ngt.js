@@ -16,9 +16,9 @@ router.get('/changes', async (req, res, next) => {
     const safePage = Math.min(page, pages);
 
     const [rows] = await db.query(
-      `SELECT id, changed_at, note, created_at
+      `SELECT id, measurement, consumption_time, created_at
        FROM ngt_history
-       ORDER BY changed_at DESC, id DESC
+       ORDER BY consumption_time DESC, id DESC
        LIMIT ? OFFSET ?`,
       [pageSize, (safePage - 1) * pageSize]
     );

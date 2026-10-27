@@ -11,15 +11,17 @@ Requirements & scope: [prd.md](prd.md)
 The existing `consumption_history` table is used **as-is — nothing in it was
 changed**. The app adds a separate `users` table (login), a tiny `seed_meta`
 table (so sample seeding never duplicates), and `ngt_history` (NGT tube
-changes — **read-only for the app**; rows are written by an external channel,
-e.g. a bot or manual insert):
+changes — **read-only for the app**; rows are written by an external channel):
 
 ```sql
-INSERT INTO ngt_history (changed_at, note, created_at)
-VALUES ('2026-10-27 14:30:00', 'size 8, flushed', UTC_TIMESTAMP());
+-- your external channel inserts like this
+INSERT INTO ngt_history (measurement, consumption_time, created_at)
+VALUES (31.50, '2026-10-25 23:43:58', NOW());
 ```
 
-The dashboard lists them newest-first, 5 per page.
+Columns: `measurement` = tube size (decimal), `consumption_time` = when it
+was changed, `created_at` = logging moment. The dashboard lists them
+newest-first, 5 per page.
 
 ## Quick start
 

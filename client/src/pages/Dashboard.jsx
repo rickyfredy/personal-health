@@ -334,18 +334,20 @@ export default function Dashboard() {
                     <thead>
                       <tr>
                         <th className="c" style={{ width: 44 }}>No.</th>
+                        <th className="c">Size</th>
                         <th>Changed at</th>
-                        <th>Note</th>
                       </tr>
                     </thead>
                     <tbody>
                       {ngtData.rows.map((r, i) => (
                         <tr key={r.id}>
                           <td className="c rowno">{(ngtPage - 1) * 5 + i + 1}</td>
+                          <td className="c cell-amount">{r.measurement ?? '—'}</td>
                           <td className="cell-amount">
-                            {shortDay(r.changed_at)} · {r.changed_at.slice(11, 16)}
+                            {r.consumption_time
+                              ? `${shortDay(r.consumption_time)} · ${r.consumption_time.slice(11, 16)}`
+                              : '—'}
                           </td>
-                          <td className={r.note ? 'cell-name' : 'rowno'}>{r.note || '—'}</td>
                         </tr>
                       ))}
                     </tbody>

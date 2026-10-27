@@ -104,9 +104,10 @@ focused, operational view with three cards only:
   milk AND medicine — each with its consumption time, sorted earliest first
   and numbered. The day is chosen with a date picker plus ‹ Prev / Next ›
   arrows; defaults to today.
-- **"NGT Change History"**: rows of the `ngt_history` table — change moment
-  and note — newest first, 5 per page with paging. Entries are written by an
-  external channel; the app reads only (no in-app logging button).
+- **"NGT Change History"**: rows of the `ngt_history` table — tube size
+  and change moment — newest first, 5 per page with paging. Entries are
+  written by an external channel; the app reads only (no in-app logging
+  button).
 - **Per-card updates**: paging (and Refresh) refetch each card's data
   independently via dedicated endpoints, so flipping weeks or days never
   re-renders neighbouring cards. The updating card dims briefly while its
@@ -136,9 +137,10 @@ placeholders.
   password_hash, created_at`.
 - `seed_meta` (added by the seed script): remembers that sample data was
   seeded so re-runs never duplicate.
-- `ngt_history` (added by the app on first boot; app reads only): 
-  `id, changed_at, note (nullable), created_at`. Written by an external
-  channel such as a bot; the dashboard reads it.
+- `ngt_history` (read-only for the app; created by the app on first boot if
+  missing, matching the external channel's shape): `id, measurement DECIMAL(4,2)
+  (tube size, nullable), consumption_time DATETIME (nullable), created_at
+  DATETIME (nullable)`. Written by an external channel; the dashboard reads it.
 
 Time semantics: `consumption_time` is stored as the wall-clock value exactly
 as entered (e.g. `2026-10-07 09:00:00`) and never converted; the app reads
