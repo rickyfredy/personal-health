@@ -29,7 +29,8 @@ export function unitText(byUnit) {
 
 export function shortDay(date) {
   if (!date) return '';
-  const [, m, d] = date.split('-').map(Number);
+  // works for both pure dates ("2026-10-25") and datetimes ("2026-10-25 23:43:58")
+  const [, m, d] = String(date).split(' ')[0].split('-').map(Number);
   return `${d} ${MONTHS[m - 1]}`;
 }
 
