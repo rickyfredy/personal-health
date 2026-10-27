@@ -104,6 +104,10 @@ focused, operational view with three cards only:
   milk AND medicine — each with its consumption time, sorted earliest first
   and numbered. The day is chosen with a date picker plus ‹ Prev / Next ›
   arrows; defaults to today.
+- **"NGT Change History"**: every record whose item name contains "NGT"
+  (e.g. "NGT change"), newest first, 5 per page with paging; a "Log change
+  now" button saves a normal consumption record (`NGT change`, 1 pc, time
+  now) so NGT changes also appear in the consumption list and the day view.
 - **Per-card updates**: paging (and Refresh) refetch each card's data
   independently via dedicated endpoints, so flipping weeks or days never
   re-renders neighbouring cards. The updating card dims briefly while its
