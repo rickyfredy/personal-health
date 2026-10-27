@@ -104,10 +104,9 @@ focused, operational view with three cards only:
   milk AND medicine — each with its consumption time, sorted earliest first
   and numbered. The day is chosen with a date picker plus ‹ Prev / Next ›
   arrows; defaults to today.
-- **"NGT Change History"**: every record whose item name contains "NGT"
-  (e.g. "NGT change"), newest first, 5 per page with paging; a "Log change
-  now" button saves a normal consumption record (`NGT change`, 1 pc, time
-  now) so NGT changes also appear in the consumption list and the day view.
+- **"NGT Change History"**: rows of the `ngt_history` table — change moment
+  and note — newest first, 5 per page with paging. Entries are written by an
+  external channel; the app reads only (no in-app logging button).
 - **Per-card updates**: paging (and Refresh) refetch each card's data
   independently via dedicated endpoints, so flipping weeks or days never
   re-renders neighbouring cards. The updating card dims briefly while its
@@ -137,6 +136,9 @@ placeholders.
   password_hash, created_at`.
 - `seed_meta` (added by the seed script): remembers that sample data was
   seeded so re-runs never duplicate.
+- `ngt_history` (added by the app on first boot; app reads only): 
+  `id, changed_at, note (nullable), created_at`. Written by an external
+  channel such as a bot; the dashboard reads it.
 
 Time semantics: `consumption_time` is stored as the wall-clock value exactly
 as entered (e.g. `2026-10-07 09:00:00`) and never converted; the app reads
@@ -187,6 +189,7 @@ the household clock.
 | GET    | `/api/summary/matrix`     | Weekly table; `week` offset paging |
 | GET    | `/api/summary/feeds`      | Daily summary; `day` offset paging |
 | GET    | `/api/summary/daily`      | Last 30 days as continuous buckets; optional `q` |
+| GET    | `/api/ngt/changes`        | NGT change history from `ngt_history`; `page` of 5 per page |
 
 ## 10. Acceptance criteria
 

@@ -11,6 +11,7 @@ const { requireAuth } = require('./middleware/auth');
 const authRoutes = require('./routes/auth');
 const consumptionRoutes = require('./routes/consumption');
 const summaryRoutes = require('./routes/summary');
+const ngtRoutes = require('./routes/ngt');
 
 const PORT = Number(process.env.PORT || 3001);
 const CLIENT_DIST = path.resolve(__dirname, '../../client/dist');
@@ -53,6 +54,7 @@ async function main() {
   app.use('/api/auth', authRoutes); // login/logout/me - no guard (guard applied inside)
   app.use('/api/summary', requireAuth, summaryRoutes);
   app.use('/api/consumptions', requireAuth, consumptionRoutes);
+  app.use('/api/ngt', requireAuth, ngtRoutes);
 
   // Built frontend (npm run build in ../client) served from the same port.
   app.use(express.static(CLIENT_DIST, { maxAge: '1h' }));

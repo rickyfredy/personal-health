@@ -47,5 +47,7 @@ export const api = {
   summaryFeeds: (params) =>
     request('/api/summary/feeds' + (params ? '?' + new URLSearchParams(params) : '')),
   summaryDaily: (params) =>
-    request('/api/summary/daily' + (params ? '?' + new URLSearchParams(params) : ''))
+    request('/api/summary/daily' + (params ? '?' + new URLSearchParams(params) : '')),
+  ngtChanges: (params) =>
+    request('/api/ngt/changes' + (params ? '?' + new URLSearchParams(params) : ''))
 };

@@ -9,8 +9,17 @@ Source: https://github.com/rickyfredy/personal-health.git ·
 Requirements & scope: [prd.md](prd.md)
 
 The existing `consumption_history` table is used **as-is — nothing in it was
-changed**. The app only adds a separate `users` table (for the login) and a
-tiny `seed_meta` table (to remember whether sample data was seeded).
+changed**. The app adds a separate `users` table (login), a tiny `seed_meta`
+table (so sample seeding never duplicates), and `ngt_history` (NGT tube
+changes — **read-only for the app**; rows are written by an external channel,
+e.g. a bot or manual insert):
+
+```sql
+INSERT INTO ngt_history (changed_at, note, created_at)
+VALUES ('2026-10-27 14:30:00', 'size 8, flushed', UTC_TIMESTAMP());
+```
+
+The dashboard lists them newest-first, 5 per page.
 
 ## Quick start
 
@@ -106,6 +115,7 @@ Day/week/month grouping uses `APP_TIMEZONE` from `.env`.
 | GET    | `/api/summary/matrix`         | The "This week" table (items × Sun–Sat); optional `q`, `week=<offset, 0=today's week, -1=previous…>` |
 | GET    | `/api/summary/feeds`          | The daily summary card (volumes for one day, grouped like carts); optional `q`, `day=<record-days back from the most recent, 0=most recent>` |
 | GET    | `/api/summary/daily`          | Last 30 wall-clock days as continuous buckets; optional `q` (powers the 30-day milk volume chart) |
+| GET    | `/api/ngt/changes`            | NGT tube changes from `ngt_history` (app reads only — writes come from an external channel); `page` of 5 per page |
 
 All non-auth endpoints require the session cookie; server-rendered list
 ordering is always `consumption_time DESC`.
