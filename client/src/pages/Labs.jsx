@@ -1,8 +1,16 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
-import { shortDay } from '../components/DashCards';
+import { SimplePager, shortDay, withinBucket } from '../components/DashCards';
 
 const strip = (s) => (s || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+const PAGE_SIZE = 20;
+const BUCKETS = [
+  { v: '3', label: 'Last 3 months' },
+  { v: '6', label: 'Last 6 months' },
+  { v: '9', label: 'Last 9 months' },
+  { v: '12', label: 'Last 1 year' },
+  { v: '', label: 'All dates' }
+];
 
 export default function Labs() {
   const [meta, setMeta] = useState({ total: 0, abnormalTotal: 0 });
@@ -10,6 +18,9 @@ export default function Labs() {
   const [error, setError] = useState('');
   const [q, setQ] = useState('');
   const [abnOnly, setAbnOnly] = useState(false);
+  const [titleSel, setTitleSel] = useState('');
+  const [bucket, setBucket] = useState('');
+  const [page, setPage] = useState(1);
   const [openId, setOpenId] = useState(null);
   const [rows, setRows] = useState({}); // numeric report id -> test rows
   const [loadingRows, setLoadingRows] = useState(false);
@@ -34,18 +45,33 @@ export default function Labs() {
     };
   }, []);
 
-  const list = useMemo(() => {
+  useEffect(() => {
+    setPage(1); // any filter change re-centers the pager
+  }, [q, abnOnly, titleSel, bucket]);
+
+  const titles = useMemo(
+    () => [...new Set((all || []).map((r) => r.title).filter(Boolean))].sort(),
+    [all]
+  );
+
+  const filtered = useMemo(() => {
     if (!all) return [];
     const needle = q.trim().toLowerCase();
     return all.filter(
       (r) =>
         (!abnOnly || r.abnormal) &&
+        (!titleSel || r.title === titleSel) &&
+        withinBucket(r.reported_at, bucket || null) &&
         (!needle ||
           `${r.title} ${r.order_facility || ''} ${r.perform_facility || ''}`
             .toLowerCase()
             .includes(needle))
     );
-  }, [all, q, abnOnly]);
+  }, [all, q, abnOnly, titleSel, bucket]);
+
+  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pages);
+  const slice = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   async function toggle(id) {
     if (openId === id) return setOpenId(null);
@@ -56,7 +82,7 @@ export default function Labs() {
         const d = await api.labRows(id);
         setRows((c) => ({ ...c, [id]: d.rows }));
       } catch {
-        /* the expanded panel will show what loaded */
+        /* the expanded panel shows what loaded */
       } finally {
         setLoadingRows(false);
       }
@@ -77,7 +103,7 @@ export default function Labs() {
           <h1>Lab results</h1>
           <p className="lede">
             {all
-              ? `${meta.total} report${meta.total === 1 ? '' : 's'}, ${meta.abnormalTotal} flagged — open a report to see every test row.`
+              ? `${meta.total} report${meta.total === 1 ? '' : 's'}, ${meta.abnormalTotal} flagged — open one to see its test rows.`
               : 'Loading…'}
           </p>
         </div>
@@ -91,11 +117,22 @@ export default function Labs() {
       </div>
 
       <div className="toolbar">
+        <select className="select" value={titleSel} onChange={(e) => setTitleSel(e.target.value)} aria-label="Report title">
+          <option value="">All report titles</option>
+          {titles.map((t) => (
+            <option key={t} value={t}>{t}</option>
+          ))}
+        </select>
+        <select className="select" value={bucket} onChange={(e) => setBucket(e.target.value)} aria-label="Report period">
+          {BUCKETS.map((b) => (
+            <option key={b.v} value={b.v}>{b.label}</option>
+          ))}
+        </select>
         <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 13.5 }}>
           <input type="checkbox" checked={abnOnly} onChange={(e) => setAbnOnly(e.target.checked)} />
           Flagged only
         </label>
-        <span style={{ color: 'var(--ink-faint)', fontSize: 13 }}>{list.length} shown</span>
+        <span style={{ color: 'var(--ink-faint)', fontSize: 13 }}>{filtered.length} shown</span>
       </div>
 
       {error && <div className="flash err">{error}</div>}
@@ -112,7 +149,7 @@ export default function Labs() {
             </tr>
           </thead>
           <tbody>
-            {list.map((r, i) => (
+            {slice.map((r, i) => (
               <Fragment key={r.id}>
                 <tr
                   className="clickrow"
@@ -121,7 +158,7 @@ export default function Labs() {
                   onClick={() => toggle(r.id)}
                   title="Open / close the test rows"
                 >
-                  <td className="c rowno">{i + 1}</td>
+                  <td className="c rowno">{(safePage - 1) * PAGE_SIZE + i + 1}</td>
                   <td className="cell-amount">{shortDay(r.reported_at)}</td>
                   <td>
                     {openId === r.id ? '▾ ' : '▸ '}
@@ -132,10 +169,7 @@ export default function Labs() {
                   </td>
                   <td className="c">
                     {r.abnormal ? (
-                      <span
-                        className="unit-badge"
-                        style={{ background: 'var(--amber-fill)', color: 'var(--amber)' }}
-                      >
+                      <span className="unit-badge" style={{ background: 'var(--amber-fill)', color: 'var(--amber)' }}>
                         ⚑ {r.abnormal_count}
                       </span>
                     ) : (
@@ -147,7 +181,9 @@ export default function Labs() {
                   <tr>
                     <td colSpan={5} style={{ padding: '0 14px 14px', background: 'var(--mint-soft)' }}>
                       <div className="expand-panel">
-                        {loadingRows && !rows[r.id] && <span style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Loading test rows…</span>}
+                        {loadingRows && !rows[r.id] && (
+                          <span style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Loading test rows…</span>
+                        )}
                         {rows[r.id] && (
                           <div className="table-wrap">
                             <table>
@@ -182,17 +218,30 @@ export default function Labs() {
                 )}
               </Fragment>
             ))}
-            {list.length === 0 && (
+            {slice.length === 0 && (
               <tr>
                 <td colSpan={5}>
                   <div className="empty">
                     <div className="big">No reports match</div>
-                    <div>Clear the search or the “flagged only” filter.</div>
+                    <div>Clear the search, title or period filters.</div>
                   </div>
                 </td>
               </tr>
             )}
           </tbody>
+          <tfoot>
+            <tr>
+              <td colSpan={5} style={{ padding: '10px 14px' }}>
+                <SimplePager
+                  page={safePage}
+                  pages={pages}
+                  setPage={setPage}
+                  disabled={filtered.length === 0}
+                  info={`page ${safePage} of ${pages} · ${filtered.length} report${filtered.length === 1 ? '' : 's'} · 20 per page`}
+                />
+              </td>
+            </tr>
+          </tfoot>
         </table>
       </div>
     </>

@@ -132,12 +132,16 @@ placeholders.
 
 Two more pages and two dashboard mini-cards:
 
-- **Lab results** page: all reports newest-first with a search box and a
-  "flagged only" filter; each report expands to its full test-row table
-  (Test | Result | Reference | Remarks), abnormal rows highlighted.
-- **Discharge** page: all hospital episodes newest-first (venue, specialty,
-  diagnoses, doctor) with an expandable detail view: procedures, drug
-  allergy, medical alerts, clinical summary and medication at discharge.
+- **Lab results** page: filterable by report title (dropdown of the titles
+  that exist), report-date period (last 3 / 6 / 9 / 12 months, or all) and
+  a "flagged only" toggle plus free-text search, 20 per page; each report
+  expands to its full test-row table (Test | Result | Reference | Remarks),
+  abnormal rows highlighted.
+- **Discharge** page: record headings are "02 Jul 2026"-style dates; dates
+  inside the record details use dd-mm-yyyy. Filterable by admission period
+  (last 3 / 6 / 9 / 12 months, or all) and by specialty, 20 per page; each
+  record expands to diagnoses, procedures, drug allergy, medical alerts,
+  clinical summary and medication at discharge.
 - **Dashboard mini-cards** link to both pages and show totals, the latest
   entry and the flagged-lab count.
 - Data path: `npm --prefix server run ingest <export.json>` — idempotent

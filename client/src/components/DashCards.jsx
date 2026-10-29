@@ -34,6 +34,46 @@ export function shortDay(date) {
   return `${d} ${MONTHS[m - 1]}`;
 }
 
+// "02 Jul 2026" — record/heading style
+export function fmtShortDate(s) {
+  const hit = /(\d{4})-(\d{2})-(\d{2})/.exec(String(s || ''));
+  if (!hit) return '';
+  return `${hit[3]} ${MONTHS[Number(hit[2]) - 1]} ${hit[1]}`;
+}
+
+// "02-07-2026" — for data rows inside a record
+export function fmtDMY(s) {
+  const hit = /(\d{4})-(\d{2})-(\d{2})/.exec(String(s || ''));
+  if (!hit) return '';
+  return `${hit[3]}-${hit[2]}-${hit[1]}`;
+}
+
+// date-bucket filter: months = null -> all; "dateStr" = "YYYY-MM-DD( HH:mm:ss)"
+export function withinBucket(dateStr, months) {
+  if (!months) return true;
+  const hit = /(\d{4})-(\d{2})-(\d{2})/.exec(String(dateStr || ''));
+  if (!hit) return false;
+  const d = new Date(Date.UTC(Number(hit[1]), Number(hit[2]) - 1, Number(hit[3])));
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - Number(months));
+  return d >= cutoff;
+}
+
+// shared ‹ Prev / Next › pager
+export function SimplePager({ page, pages, setPage, disabled, info }) {
+  return (
+    <div className="pagebtns">
+      <button className="pagebtn" disabled={disabled || page <= 1} onClick={() => setPage(page - 1)}>
+        ‹ Prev
+      </button>
+      <button className="pagebtn" disabled={disabled || page >= pages} onClick={() => setPage(page + 1)}>
+        Next ›
+      </button>
+      {info && <span style={{ color: 'var(--ink-faint)', fontSize: 12.5, marginLeft: 6 }}>{info}</span>}
+    </div>
+  );
+}
+
 export function dayNum(date) {
   return Number(date.split('-')[2]);
 }

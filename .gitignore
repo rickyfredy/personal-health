@@ -4,8 +4,15 @@
 .env.*.local
 
 # ── private medical exports (PII) — never commit ─────────────────────────────
-*HealthHub*
-*.json.bak
+# (exact export-file names only, so code files like ingest-healthhub.js still
+#  get tracked even on case-insensitive filesystems where git matches
+#  patterns case-insensitively)
+/HealthHub-*.json
+/HealthHub-*.csv
+/HealthHub-*.html
+/HealthHub-*.txt
+/data/
+downloads/
 
 # ── dependencies & build output ───────────────────────────────────────────────
 node_modules/
