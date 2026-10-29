@@ -49,5 +49,10 @@ export const api = {
   summaryDaily: (params) =>
     request('/api/summary/daily' + (params ? '?' + new URLSearchParams(params) : '')),
   ngtChanges: (params) =>
-    request('/api/ngt/changes' + (params ? '?' + new URLSearchParams(params) : ''))
+    request('/api/ngt/changes' + (params ? '?' + new URLSearchParams(params) : '')),
+  labs: (params) =>
+    request('/api/labs' + (params ? '?' + new URLSearchParams(params) : '')),
+  labRows: (id) => request(`/api/labs/${id}/rows`),
+  discharge: (params) =>
+    request('/api/discharge' + (params ? '?' + new URLSearchParams(params) : ''))
 };

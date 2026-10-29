@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import {
   Chart,
@@ -59,6 +60,20 @@ export default function Dashboard() {
       live = false;
     };
   }, [reload, ngtPage]);
+
+  // mini-cards: lab + discharge totals and latest entries (independent fetches)
+  const [labsBrief, setLabsBrief] = useState(null);
+  const [dischBrief, setDischBrief] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    let live = true;
+    api.labs({ limit: 1 }).then((d) => live && setLabsBrief(d)).catch(() => {});
+    api.discharge({ limit: 1 }).then((d) => live && setDischBrief(d)).catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [reload]);
 
   useEffect(() => {
     let live = true;
@@ -193,6 +208,9 @@ export default function Dashboard() {
       </div>
 
       <div className="dash-grid">
+        <MiniLabCard data={labsBrief} loading={!labsBrief} onClick={() => navigate('/labs')} />
+        <MiniDischargeCard data={dischBrief} loading={!dischBrief} onClick={() => navigate('/discharge')} />
+
         <WeekMatrixCard
           matrix={matrix}
           matrixLoading={matrixLoading}
@@ -364,4 +382,67 @@ export default function Dashboard() {
       </div>
     </>
   );
+}
+
+/* mini-cards linking to the medical pages */
+
+function MiniLabCard({ data, loading, onClick }) {
+  const latest = data?.reports?.[0];
+  return (
+    <div
+      className="chart-card mini-link"
+      onClick={onClick}
+      role="link"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') onClick();
+      }}
+      style={{ opacity: loading ? 0.6 : 1 }}
+      title="Open lab results"
+    >
+      <div className="label" style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-faint)', marginBottom: 8 }}>
+        Lab reports
+      </div>
+      <div className="value">{loading ? '…' : fmtN(data.total)}</div>
+      <div className="sub">
+        {latest
+          ? `latest ${shortDay(latest.reported_at)} · ${latest.title?.slice(0, 40)}`
+          : 'no reports yet'}
+        {data && data.abnormalTotal > 0 && (
+          <span style={{ color: 'var(--amber)', fontWeight: 600 }}> · ⚑ {data.abnormalTotal} flagged</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MiniDischargeCard({ data, loading, onClick }) {
+  const latest = data?.records?.[0];
+  return (
+    <div
+      className="chart-card mini-link"
+      onClick={onClick}
+      role="link"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') onClick();
+      }}
+      style={{ opacity: loading ? 0.6 : 1 }}
+      title="Open discharge summaries"
+    >
+      <div className="label" style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-faint)', marginBottom: 8 }}>
+        Discharges
+      </div>
+      <div className="value">{loading ? '…' : fmtN(data.total)}</div>
+      <div className="sub">
+        {latest
+          ? `latest ${shortDay(latest.discharged_at)} · ${latest.venue || ''} · ${(latest.primary_dx || '—').split('; ')[0]}`
+          : 'no summaries yet'}
+      </div>
+    </div>
+  );
+}
+
+function fmtN(n) {
+  return Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
 }

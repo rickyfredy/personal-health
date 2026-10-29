@@ -801,6 +801,86 @@ tbody tr:hover {
   font-variant-numeric: tabular-nums;
 }
 
+/* generic table alignment helpers + clickable rows */
+th.c,
+td.c {
+  text-align: center;
+}
+
+td.rowno {
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+tr.clickrow {
+  cursor: pointer;
+}
+
+tr.clickrow:hover {
+  background: var(--mint-soft);
+}
+
+/* expandable detail panels (lab rows, discharge sections) */
+
+.expand-panel {
+  border-top: 1px solid var(--line);
+  margin-top: 10px;
+  padding-top: 12px;
+  display: grid;
+  gap: 12px;
+}
+
+.chipline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 4px 12px;
+  font-size: 13px;
+}
+
+.kv .k {
+  color: var(--ink-faint);
+}
+
+.note-block {
+  background: var(--mint-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.discharge-list {
+  display: grid;
+  gap: 12px;
+}
+
+/* dashboard mini-cards that link to a page */
+.mini-link {
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.mini-link:hover {
+  border-color: var(--spruce);
+}
+
+.mini-link .value {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ---------- responsive ---------- */
 
 @media (max-width: 960px) {

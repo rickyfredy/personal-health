@@ -3,6 +3,10 @@
 .env.local
 .env.*.local
 
+# ── private medical exports (PII) — never commit ─────────────────────────────
+*HealthHub*
+*.json.bak
+
 # ── dependencies & build output ───────────────────────────────────────────────
 node_modules/
 client/dist/

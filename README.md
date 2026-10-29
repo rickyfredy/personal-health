@@ -23,6 +23,23 @@ Columns: `measurement` = tube size (decimal), `consumption_time` = when it
 was changed, `created_at` = logging moment. The dashboard lists them
 newest-first, 5 per page.
 
+## Medical records (HealthHub imports)
+
+Exports from HealthHub (Lab Results / Discharge Summaries, `.json`) are
+imported with:
+
+```bash
+npm --prefix server run ingest <export1.json> [export2.json ...]
+```
+
+The import is **idempotent** — each entry carries the export's own id, so
+re-running an import updates rows instead of duplicating them. Lab reports
+store their full test-row tables; discharge summaries keep diagnoses,
+procedures, allergies, alerts and the medication text.
+
+⚠️ Do NOT commit these export files — they contain personal identifiers.
+They are git-ignored (`*HealthHub*`).
+
 ## Quick start
 
 ```bash
@@ -118,6 +135,9 @@ Day/week/month grouping uses `APP_TIMEZONE` from `.env`.
 | GET    | `/api/summary/feeds`          | The daily summary card (volumes for one day, grouped like carts); optional `q`, `day=<record-days back from the most recent, 0=most recent>` |
 | GET    | `/api/summary/daily`          | Last 30 wall-clock days as continuous buckets; optional `q` (powers the 30-day milk volume chart) |
 | GET    | `/api/ngt/changes`            | NGT tube changes from `ngt_history` (app reads only — writes come from an external channel); `page` of 5 per page |
+| GET    | `/api/labs`                   | Lab report list (`q` title filter, `abnormal=1`, `limit`, cap 1000) + totals |
+| GET    | `/api/labs/:id/rows`          | Full test-row table of one report |
+| GET    | `/api/discharge`              | Discharge summaries with parsed details; `limit` (cap 200) |
 
 All non-auth endpoints require the session cookie; server-rendered list
 ordering is always `consumption_time DESC`.

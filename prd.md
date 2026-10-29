@@ -128,6 +128,22 @@ secret and TTL, default account, cart window, and the dashboard's default
 item. `.env` is git-ignored; `.env.example` documents every key with
 placeholders.
 
+## 5.4 Medical records (HealthHub imports)
+
+Two more pages and two dashboard mini-cards:
+
+- **Lab results** page: all reports newest-first with a search box and a
+  "flagged only" filter; each report expands to its full test-row table
+  (Test | Result | Reference | Remarks), abnormal rows highlighted.
+- **Discharge** page: all hospital episodes newest-first (venue, specialty,
+  diagnoses, doctor) with an expandable detail view: procedures, drug
+  allergy, medical alerts, clinical summary and medication at discharge.
+- **Dashboard mini-cards** link to both pages and show totals, the latest
+  entry and the flagged-lab count.
+- Data path: `npm --prefix server run ingest <export.json>` — idempotent
+  imports (dedup by the export's record id), purely additive updates, no
+  deletions. Export files contain personal identifiers and are git-ignored.
+
 ## 6. Data model
 
 - `consumption_history` (existing, untouched):
