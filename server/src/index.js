@@ -65,10 +65,21 @@ async function main() {
   app.use('/api/food', requireAuth, foodRoutes);
 
   // Built frontend (npm run build in ../client) served from the same port.
-  app.use(express.static(CLIENT_DIST, { maxAge: '1h' }));
+  // HTML must not be cached aggressively: index.html references the hashed
+  // bundles, so stale HTML keeps serving an old JS build (blank/mixed UIs);
+  // the hashed assets themselves can cache forever.
+  app.use(
+    express.static(CLIENT_DIST, {
+      setHeaders: (res, filePath) => {
+        if (String(filePath).endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
+        else res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    })
+  );
 
   // SPA fallback: any non-API GET serves the app shell.
   app.get(/^\/(?!api\/).*/, (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
     res.sendFile(path.join(CLIENT_DIST, 'index.html'));
   });
 
