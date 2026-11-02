@@ -405,25 +405,28 @@ export default function Dashboard() {
 /* care-timeline: CRP values over time with admission/discharge markers */
 
 function TimelineCard({ data, loading }) {
-  const [range, setRange] = useState('6'); // months to look back; '' = all
-  const cutoff = range
-    ? (() => {
-        const d = new Date();
-        d.setMonth(d.getMonth() - Number(range));
-        return d.getTime();
-      })()
-    : null;
+  const localDate = () => new Date().toLocaleDateString('sv-SE');
+  const [from, setFrom] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 6);
+    return d.toLocaleDateString('sv-SE');
+  });
+  const [to, setTo] = useState(localDate);
+
+  const startTs = from ? Date.parse(from + 'T00:00:00Z') : null;
+  const endTs = to ? Date.parse(to + 'T23:59:59Z') : null;
+  const inRange = (ts) => ts != null && (startTs == null || ts >= startTs) && (endTs == null || ts <= endTs);
 
   const points = (data?.crp || [])
-    .filter((c) => !cutoff || c.ts >= cutoff)
+    .filter((c) => inRange(c.ts))
     .map((c) => ({
       ts: c.ts,
       value: c.value,
       abnormal: c.abnormal,
       title: c.title
     }));
-  const admissions = (data?.admissions || []).filter((t) => !cutoff || t >= cutoff);
-  const discharges = (data?.discharges || []).filter((t) => !cutoff || t >= cutoff);
+  const admissions = (data?.admissions || []).filter(inRange);
+  const discharges = (data?.discharges || []).filter(inRange);
 
   const all = [...points.map((p) => p.ts), ...admissions, ...discharges];
   const domain = all.length ? [Math.min(...all) - 864e5, Math.max(...all) + 864e5] : undefined;
@@ -441,24 +444,29 @@ function TimelineCard({ data, loading }) {
             <span className="chip" style={{ background: 'var(--amber-fill)', color: 'var(--amber)' }}>A · admitted</span>
             <span className="chip">D · discharged</span>
           </div>
-          <select
-            className="select"
+          <input
+            type="date"
+            className="input"
             style={{ height: 30, padding: '2px 8px', fontSize: 13 }}
-            value={range}
-            onChange={(e) => setRange(e.target.value)}
-            aria-label="Timeline range"
-          >
-            <option value="3">Last 3 months</option>
-            <option value="6">Last 6 months</option>
-            <option value="9">Last 9 months</option>
-            <option value="12">Last 1 year</option>
-            <option value="">All</option>
-          </select>
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            max={to || undefined}
+            aria-label="Timeline start date"
+          />
+          <input
+            type="date"
+            className="input"
+            style={{ height: 30, padding: '2px 8px', fontSize: 13 }}
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            min={from || undefined}
+            aria-label="Timeline end date"
+          />
         </div>
       </div>
       <div className="sub">
         {data
-          ? `C-Reactive Protein (mg/L) with hospital episodes marked · ${points.length} CRP results in range`
+          ? `C-Reactive Protein (mg/L) with hospital episodes marked · ${points.length} CRP results · ${from ? fmtShortDate(from) : '…'} – ${to ? fmtShortDate(to) : '…'}`
           : 'Loading…'}
       </div>
       <div className="fade-wrap" style={{ opacity: loading ? 0.45 : 1, height: 280 }}>

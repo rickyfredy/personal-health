@@ -49,9 +49,9 @@ export default function App() {
           <NavLink to="/" end>
             Dashboard
           </NavLink>
+          <NavLink to="/food">Food Report</NavLink>
           <NavLink to="/labs">Lab results</NavLink>
           <NavLink to="/discharge">Discharge</NavLink>
-          <NavLink to="/food">Food Report</NavLink>
           <NavLink to="/history">Consumption</NavLink>
         </nav>
         <div className="who">
