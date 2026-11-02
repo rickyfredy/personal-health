@@ -429,7 +429,7 @@ function TimelineCard({ data, loading }) {
   const domain = all.length ? [Math.min(...all) - 864e5, Math.max(...all) + 864e5] : undefined;
   const monthTick = (t) => {
     const d = new Date(t);
-    return `${MONTHS[d.getUTCMonth()]} ${String(d.getUTCFullYear()).slice(2)}`;
+    return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
   };
 
   return (
