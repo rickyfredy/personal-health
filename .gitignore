@@ -13,6 +13,7 @@
 /HealthHub-*.txt
 /data/
 downloads/
+server/uploads/
 
 # ── dependencies & build output ───────────────────────────────────────────────
 node_modules/
@@ -24,3 +25,5 @@ client/dist/
 Thumbs.db
 # vite config cache
 client/vite.config.js.timestamp-*.mjs
+
+server/uploads/

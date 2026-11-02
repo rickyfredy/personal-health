@@ -43,6 +43,21 @@ async function bootstrap() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
+  // Meal photos ("Food Report" page). taken_at = wall-clock moment of the
+  // meal; the image bytes live on disk (server/uploads/food).
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS food_photos (
+      id INT NOT NULL AUTO_INCREMENT,
+      meal VARCHAR(20) NOT NULL,
+      taken_at DATETIME NOT NULL,
+      stored_name VARCHAR(200) NOT NULL,
+      original_name VARCHAR(200) NULL,
+      created_at DATETIME NOT NULL,
+      PRIMARY KEY (id),
+      KEY ix_food_taken (taken_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
   // Medical records imported from HealthHub exports (see ingest-healthhub.js).
   // ext_id = the export's dedupe key, so re-importing an export updates
   // instead of duplicating.

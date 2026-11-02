@@ -180,7 +180,7 @@ export default function History() {
               <tr key={r.id} style={busyId === r.id ? { opacity: 0.5 } : undefined}>
                 <td className="cell-time">
                   <div className="d">{fmtDate(r.consumption_time)}</div>
-                  <div className="t">{r.consumption_time.slice(11, 16)}</div>
+                  <div className="t">{fmtClock(r.consumption_time)}</div>
                 </td>
                 <td className="cell-name">{r.name}</td>
                 <td className="cell-amount">{fmtNum(r.amount)}</td>
@@ -426,10 +426,16 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function fmtDate(s) {
-  if (!s) return '';
-  const [y, m, d] = s.split(' ')[0].split('-').map(Number);
-  const wd = DAYS[new Date(`${y}-${m}-${d}T00:00:00Z`).getUTCDay()];
+  if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}/.test(s)) return '—';
+  const y = Number(s.slice(0, 4));
+  const m = Number(s.slice(5, 7));
+  const d = Number(s.slice(8, 10));
+  const wd = DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
   return `${wd}, ${d} ${MONTHS[m - 1]} ${y}`;
+}
+
+function fmtClock(s) {
+  return typeof s === 'string' && /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(s) ? s.slice(11, 16) : '—';
 }
 
 function fmtNum(n) {

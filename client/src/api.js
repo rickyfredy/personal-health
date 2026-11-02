@@ -54,5 +54,11 @@ export const api = {
     request('/api/labs' + (params ? '?' + new URLSearchParams(params) : '')),
   labRows: (id) => request(`/api/labs/${id}/rows`),
   discharge: (params) =>
-    request('/api/discharge' + (params ? '?' + new URLSearchParams(params) : ''))
+    request('/api/discharge' + (params ? '?' + new URLSearchParams(params) : '')),
+  timeline: () => request('/api/timeline'),
+  food: (params) =>
+    request('/api/food' + (params ? '?' + new URLSearchParams(params) : '')),
+  foodUpload: (body) =>
+    request('/api/food', { method: 'POST', body: JSON.stringify(body) }),
+  foodDelete: (id) => request(`/api/food/${id}`, { method: 'DELETE' })
 };

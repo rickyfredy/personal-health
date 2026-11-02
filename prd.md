@@ -130,11 +130,12 @@ placeholders.
 
 ## 5.4 Medical records (HealthHub imports)
 
-Two more pages and two dashboard mini-cards:
+Two more pages:
 
-- **Lab results** page: filterable by report title (dropdown of the titles
-  that exist), report-date period (last 3 / 6 / 9 / 12 months, or all) and
-  a "flagged only" toggle plus free-text search, 20 per page; each report
+- **Lab results** page: two-level grouping — first by report date (a date
+  header row, then that date's reports under it), with a report-title
+  dropdown, report-date period filter (last 3 / 6 / 9 / 12 months, or all),
+  a "flagged only" toggle and free-text search, 20 per page; each report
   expands to its full test-row table (Test | Result | Reference | Remarks),
   abnormal rows highlighted.
 - **Discharge** page: record headings are "02 Jul 2026"-style dates; dates
@@ -142,11 +143,27 @@ Two more pages and two dashboard mini-cards:
   (last 3 / 6 / 9 / 12 months, or all) and by specialty, 20 per page; each
   record expands to diagnoses, procedures, drug allergy, medical alerts,
   clinical summary and medication at discharge.
+
+The earlier dashboard mini-cards (lab/discharge totals) were removed and
+replaced by a **care-timeline graph** on the dashboard: C-Reactive Protein
+values (mg/L) over time as a line, with every hospital admission (A, amber
+dashed) and discharge (D, green dashed) from the discharge data marked on
+the timeline.
 - **Dashboard mini-cards** link to both pages and show totals, the latest
   entry and the flagged-lab count.
 - Data path: `npm --prefix server run ingest <export.json>` — idempotent
   imports (dedup by the export's record id), purely additive updates, no
   deletions. Export files contain personal identifiers and are git-ignored.
+
+## 5.5 Food report
+
+A **Food** page: meal photos (lunch / dinner / snack) of the recent weeks as
+a gallery — each photo overlaid with its date (dd-mm-yyyy) and a coloured
+meal label. A "Save a meal photo" form takes meal type, day & time and an
+image (uploaded from a phone camera roll); photos are filterable by period
+(last 30 / 60 / 90 days, last 1 year) and browsable 24 per page. Photos
+upload to the server (stored on disk, listed in `food_photos`) and are only
+served behind the login.
 
 ## 6. Data model
 
@@ -161,6 +178,11 @@ Two more pages and two dashboard mini-cards:
   missing, matching the external channel's shape): `id, measurement DECIMAL(4,2)
   (tube size, nullable), consumption_time DATETIME (nullable), created_at
   DATETIME (nullable)`. Written by an external channel; the dashboard reads it.
+- `food_photos`: `id, meal, taken_at, stored_name, original_name (nullable),
+  created_at` — meal photos for the Food page (bytes on server disk).
+- HealthHub tables (added by bootstrap/ingest, see §5.4): `lab_reports`,
+  `lab_result_rows`, `discharge_records` — with the export's own id as
+  `ext_id` for dedupe; re-importing an export updates instead of duplicating.
 
 Time semantics: `consumption_time` is stored as the wall-clock value exactly
 as entered (e.g. `2026-10-07 09:00:00`) and never converted; the app reads
@@ -212,6 +234,11 @@ the household clock.
 | GET    | `/api/summary/feeds`      | Daily summary; `day` offset paging |
 | GET    | `/api/summary/daily`      | Last 30 days as continuous buckets; optional `q` |
 | GET    | `/api/ngt/changes`        | NGT change history from `ngt_history`; `page` of 5 per page |
+| GET    | `/api/timeline`           | CRP results over time + distinct hospital admission/discharge moments (dashboard graph) |
+| GET    | `/api/food`               | Meal photos, newest first (up to 500) |
+| POST   | `/api/food`               | Save a meal photo `{meal, taken_at, dataUrl}` (base64 image, ≤ ~10 MB) |
+| GET    | `/api/food/photo/:id`     | Image bytes for one photo (login required) |
+| DELETE | `/api/food/:id`           | Delete one photo (row + file) |
 
 ## 10. Acceptance criteria
 

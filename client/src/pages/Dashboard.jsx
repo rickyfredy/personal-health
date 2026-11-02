@@ -1,11 +1,22 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts';
 import { api } from '../api';
 import {
   Chart,
   DailyFeedsCard,
   WeekMatrixCard,
+  MONTHS,
   collectUnitsOfDays,
+  fmtShortDate,
   fmtNum,
   shortDay,
   unitText
@@ -61,15 +72,21 @@ export default function Dashboard() {
     };
   }, [reload, ngtPage]);
 
-  // mini-cards: lab + discharge totals and latest entries (independent fetches)
-  const [labsBrief, setLabsBrief] = useState(null);
-  const [dischBrief, setDischBrief] = useState(null);
-  const navigate = useNavigate();
+  // care-timeline: CRP values over time + admission/discharge markers
+  const [timeline, setTimeline] = useState(null);
+  const [tLoading, setTLoading] = useState(true);
 
   useEffect(() => {
     let live = true;
-    api.labs({ limit: 1 }).then((d) => live && setLabsBrief(d)).catch(() => {});
-    api.discharge({ limit: 1 }).then((d) => live && setDischBrief(d)).catch(() => {});
+    setTLoading(true);
+    api
+      .timeline()
+      .then((d) => {
+        if (!live) return;
+        setTimeline(d);
+        setTLoading(false);
+      })
+      .catch(() => live && setTLoading(false));
     return () => {
       live = false;
     };
@@ -184,6 +201,8 @@ export default function Dashboard() {
     return d.toISOString().slice(0, 10);
   };
 
+  const safeClock = (s) => (typeof s === 'string' && /^\d{4}-/.test(s) ? s.slice(11, 16) : '—');
+
   return (
     <>
       <div className="page-head">
@@ -208,8 +227,7 @@ export default function Dashboard() {
       </div>
 
       <div className="dash-grid">
-        <MiniLabCard data={labsBrief} loading={!labsBrief} onClick={() => navigate('/labs')} />
-        <MiniDischargeCard data={dischBrief} loading={!dischBrief} onClick={() => navigate('/discharge')} />
+        <TimelineCard data={timeline} loading={tLoading} />
 
         <WeekMatrixCard
           matrix={matrix}
@@ -300,7 +318,7 @@ export default function Dashboard() {
                           <td className="c cell-amount">
                             {fmtNum(r.amount)} {r.measurement}
                           </td>
-                          <td className="c cell-amount">{r.consumption_time.slice(11, 16)}</td>
+                          <td className="c cell-amount">{safeClock(r.consumption_time)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -384,65 +402,93 @@ export default function Dashboard() {
   );
 }
 
-/* mini-cards linking to the medical pages */
+/* care-timeline: CRP values over time with admission/discharge markers */
 
-function MiniLabCard({ data, loading, onClick }) {
-  const latest = data?.reports?.[0];
+function TimelineCard({ data, loading }) {
+  const points = (data?.crp || []).map((c) => ({
+    ts: c.ts,
+    value: c.value,
+    abnormal: c.abnormal,
+    title: c.title
+  }));
+
+  const all = [...points.map((p) => p.ts), ...(data?.admissions || []), ...(data?.discharges || [])];
+  const domain = all.length ? [Math.min(...all) - 864e5, Math.max(...all) + 864e5] : undefined;
+  const monthTick = (t) => {
+    const d = new Date(t);
+    return `${MONTHS[d.getUTCMonth()]} ${String(d.getUTCFullYear()).slice(2)}`;
+  };
+
   return (
-    <div
-      className="chart-card mini-link"
-      onClick={onClick}
-      role="link"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') onClick();
-      }}
-      style={{ opacity: loading ? 0.6 : 1 }}
-      title="Open lab results"
-    >
-      <div className="label" style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-faint)', marginBottom: 8 }}>
-        Lab reports
+    <div className="chart-card wide">
+      <div className="card-head">
+        <h2>Care timeline</h2>
+        <div className="chipline">
+          <span className="chip" style={{ background: 'var(--amber-fill)', color: 'var(--amber)' }}>A · admitted</span>
+          <span className="chip">D · discharged</span>
+        </div>
       </div>
-      <div className="value">{loading ? '…' : fmtN(data.total)}</div>
       <div className="sub">
-        {latest
-          ? `latest ${shortDay(latest.reported_at)} · ${latest.title?.slice(0, 40)}`
-          : 'no reports yet'}
-        {data && data.abnormalTotal > 0 && (
-          <span style={{ color: 'var(--amber)', fontWeight: 600 }}> · ⚑ {data.abnormalTotal} flagged</span>
-        )}
+        {data
+          ? `C-Reactive Protein (mg/L) with hospital episodes marked · ${points.length} CRP results`
+          : 'Loading…'}
+      </div>
+      <div className="fade-wrap" style={{ opacity: loading ? 0.45 : 1, height: 280 }}>
+        {data &&
+          (points.length ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={points} margin={{ top: 18, right: 10, left: -6, bottom: 0 }}>
+                <CartesianGrid stroke="#e4eee9" vertical={false} />
+                <XAxis
+                  dataKey="ts"
+                  type="number"
+                  scale="time"
+                  domain={domain}
+                  tickCount={6}
+                  tickFormatter={monthTick}
+                  tick={{ fontSize: 11, fill: '#7d938b' }}
+                />
+                <YAxis tick={{ fontSize: 11, fill: '#7d938b' }} width={40} />
+                <Tooltip
+                  labelFormatter={(t) => fmtShortDate(new Date(t))}
+                  formatter={(v) => [`${v} mg/L`, 'C-Reactive Protein']}
+                  labelStyle={{ fontWeight: 600 }}
+                />
+                {(data?.admissions || []).map((t, i) => (
+                  <ReferenceLine
+                    key={`a${i}`}
+                    x={t}
+                    stroke="#b97b1c"
+                    strokeDasharray="5 3"
+                    label={{ value: 'A', position: 'insideTopLeft', fill: '#b97b1c', fontSize: 10 }}
+                  />
+                ))}
+                {(data?.discharges || []).map((t, i) => (
+                  <ReferenceLine
+                    key={`d${i}`}
+                    x={t}
+                    stroke="#1f6f5c"
+                    strokeDasharray="2 3"
+                    label={{ value: 'D', position: 'insideTopLeft', fill: '#1f6f5c', fontSize: 10 }}
+                  />
+                ))}
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#1f6f5c"
+                  strokeWidth={2}
+                  dot={{ r: 2.5, fill: '#1f6f5c' }}
+                  connectNulls
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="empty">
+              <div className="big">No C-Reactive Protein results yet</div>
+              <div>The timeline appears once CRP results are imported from lab reports.</div>
+            </div>
+          ))}
       </div>
     </div>
   );
-}
-
-function MiniDischargeCard({ data, loading, onClick }) {
-  const latest = data?.records?.[0];
-  return (
-    <div
-      className="chart-card mini-link"
-      onClick={onClick}
-      role="link"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') onClick();
-      }}
-      style={{ opacity: loading ? 0.6 : 1 }}
-      title="Open discharge summaries"
-    >
-      <div className="label" style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-faint)', marginBottom: 8 }}>
-        Discharges
-      </div>
-      <div className="value">{loading ? '…' : fmtN(data.total)}</div>
-      <div className="sub">
-        {latest
-          ? `latest ${shortDay(latest.discharged_at)} · ${latest.venue || ''} · ${(latest.primary_dx || '—').split('; ')[0]}`
-          : 'no summaries yet'}
-      </div>
-    </div>
-  );
-}
-
-function fmtN(n) {
-  return Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
 }

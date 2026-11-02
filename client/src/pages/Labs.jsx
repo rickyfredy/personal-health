@@ -1,9 +1,10 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
-import { SimplePager, shortDay, withinBucket } from '../components/DashCards';
+import { SimplePager, fmtShortDate, withinBucket } from '../components/DashCards';
 
 const strip = (s) => (s || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 const PAGE_SIZE = 20;
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const BUCKETS = [
   { v: '3', label: 'Last 3 months' },
   { v: '6', label: 'Last 6 months' },
@@ -72,6 +73,18 @@ export default function Labs() {
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, pages);
   const slice = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  // 2-level grouping: date header rows, reports under each date
+  const groups = useMemo(() => {
+    const idxOf = new Map(filtered.map((r, i) => [r.id, i]));
+    const map = new Map();
+    for (const r of slice) {
+      const d = String(r.reported_at).slice(0, 10);
+      if (!map.has(d)) map.set(d, []);
+      map.get(d).push({ ...r, pageIdx: idxOf.get(r.id) });
+    }
+    return [...map.entries()];
+  }, [slice, filtered]);
 
   async function toggle(id) {
     if (openId === id) return setOpenId(null);
@@ -142,85 +155,97 @@ export default function Labs() {
           <thead>
             <tr>
               <th className="c" style={{ width: 44 }}>No.</th>
-              <th style={{ width: 110 }}>Reported</th>
               <th>Title</th>
               <th>Facility</th>
               <th className="c" style={{ width: 90 }}>Flagged</th>
             </tr>
           </thead>
           <tbody>
-            {slice.map((r, i) => (
-              <Fragment key={r.id}>
-                <tr
-                  className="clickrow"
-                  tabIndex={0}
-                  onKeyDown={keyToggle(r.id)}
-                  onClick={() => toggle(r.id)}
-                  title="Open / close the test rows"
-                >
-                  <td className="c rowno">{(safePage - 1) * PAGE_SIZE + i + 1}</td>
-                  <td className="cell-amount">{shortDay(r.reported_at)}</td>
-                  <td>
-                    {openId === r.id ? '▾ ' : '▸ '}
-                    {r.title}
-                  </td>
-                  <td style={{ fontSize: 13, color: 'var(--ink-soft)', whiteSpace: 'nowrap' }}>
-                    {r.order_facility || r.perform_facility || '—'}
-                  </td>
-                  <td className="c">
-                    {r.abnormal ? (
-                      <span className="unit-badge" style={{ background: 'var(--amber-fill)', color: 'var(--amber)' }}>
-                        ⚑ {r.abnormal_count}
-                      </span>
-                    ) : (
-                      <span className="rowno">—</span>
-                    )}
+            {groups.map(([date, reps]) => (
+              <Fragment key={date}>
+                <tr className="date-group">
+                  <td colSpan={4}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600 }}>
+                      {fmtShortDate(date)}
+                    </span>
+                    <span style={{ color: 'var(--ink-faint)', fontSize: 12, marginLeft: 8 }}>
+                      {reps.length} report{reps.length === 1 ? '' : 's'} · {DAYS[new Date(date + 'T00:00:00Z').getUTCDay()]}
+                    </span>
                   </td>
                 </tr>
-                {openId === r.id && (
-                  <tr>
-                    <td colSpan={5} style={{ padding: '0 14px 14px', background: 'var(--mint-soft)' }}>
-                      <div className="expand-panel">
-                        {loadingRows && !rows[r.id] && (
-                          <span style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Loading test rows…</span>
+                {reps.map((r) => (
+                  <Fragment key={r.id}>
+                    <tr
+                      className="clickrow"
+                      tabIndex={0}
+                      onKeyDown={keyToggle(r.id)}
+                      onClick={() => toggle(r.id)}
+                      title="Open / close the test rows"
+                    >
+                      <td className="c rowno">{r.pageIdx + 1}</td>
+                      <td>
+                        {openId === r.id ? '▾ ' : '▸ '}
+                        {r.title}
+                      </td>
+                      <td style={{ fontSize: 13, color: 'var(--ink-soft)', whiteSpace: 'nowrap' }}>
+                        {r.order_facility || r.perform_facility || '—'}
+                      </td>
+                      <td className="c">
+                        {r.abnormal ? (
+                          <span className="unit-badge" style={{ background: 'var(--amber-fill)', color: 'var(--amber)' }}>
+                            ⚑ {r.abnormal_count}
+                          </span>
+                        ) : (
+                          <span className="rowno">—</span>
                         )}
-                        {rows[r.id] && (
-                          <div className="table-wrap">
-                            <table>
-                              <thead>
-                                <tr>
-                                  <th style={{ width: 240 }}>Test</th>
-                                  <th>Result</th>
-                                  <th style={{ width: 140 }}>Reference</th>
-                                  <th>Remarks</th>
-                                  <th className="c" style={{ width: 50 }}>⚑</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {rows[r.id].map((row, k) => (
-                                  <tr key={k} style={row.abnormal ? { background: 'var(--amber-fill)' } : undefined}>
-                                    <td style={{ fontWeight: 600, whiteSpace: 'normal' }}>{strip(row.test)}</td>
-                                    <td style={{ whiteSpace: 'normal' }}>{strip(row.result) || '—'}</td>
-                                    <td className="rowno" style={{ whiteSpace: 'nowrap' }}>{strip(row.ref) || '—'}</td>
-                                    <td style={{ color: 'var(--ink-faint)', fontSize: 12.5, whiteSpace: 'normal' }}>
-                                      {strip(row.comments) || '—'}
-                                    </td>
-                                    <td className="c">{row.abnormal ? '⚑' : ''}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                      </td>
+                    </tr>
+                    {openId === r.id && (
+                      <tr>
+                        <td colSpan={4} style={{ padding: '0 14px 14px', background: 'var(--mint-soft)' }}>
+                          <div className="expand-panel">
+                            {loadingRows && !rows[r.id] && (
+                              <span style={{ color: 'var(--ink-soft)', fontSize: 13 }}>Loading test rows…</span>
+                            )}
+                            {rows[r.id] && (
+                              <div className="table-wrap">
+                                <table>
+                                  <thead>
+                                    <tr>
+                                      <th style={{ width: 240 }}>Test</th>
+                                      <th>Result</th>
+                                      <th style={{ width: 140 }}>Reference</th>
+                                      <th>Remarks</th>
+                                      <th className="c" style={{ width: 50 }}>⚑</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {rows[r.id].map((row, k) => (
+                                      <tr key={k} style={row.abnormal ? { background: 'var(--amber-fill)' } : undefined}>
+                                        <td style={{ fontWeight: 600, whiteSpace: 'normal' }}>{strip(row.test)}</td>
+                                        <td style={{ whiteSpace: 'normal' }}>{strip(row.result) || '—'}</td>
+                                        <td className="rowno" style={{ whiteSpace: 'nowrap' }}>{strip(row.ref) || '—'}</td>
+                                        <td style={{ color: 'var(--ink-faint)', fontSize: 12.5, whiteSpace: 'normal' }}>
+                                          {strip(row.comments) || '—'}
+                                        </td>
+                                        <td className="c">{row.abnormal ? '⚑' : ''}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                )}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
               </Fragment>
             ))}
             {slice.length === 0 && (
               <tr>
-                <td colSpan={5}>
+                <td colSpan={4}>
                   <div className="empty">
                     <div className="big">No reports match</div>
                     <div>Clear the search, title or period filters.</div>
@@ -231,7 +256,7 @@ export default function Labs() {
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={5} style={{ padding: '10px 14px' }}>
+              <td colSpan={4} style={{ padding: '10px 14px' }}>
                 <SimplePager
                   page={safePage}
                   pages={pages}

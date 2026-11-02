@@ -6,6 +6,7 @@ import History from './pages/History';
 import Dashboard from './pages/Dashboard';
 import Labs from './pages/Labs';
 import Discharge from './pages/Discharge';
+import Food from './pages/Food';
 
 export default function App() {
   const [user, setUser] = useState(undefined); // undefined = still checking
@@ -50,6 +51,7 @@ export default function App() {
           </NavLink>
           <NavLink to="/labs">Lab results</NavLink>
           <NavLink to="/discharge">Discharge</NavLink>
+          <NavLink to="/food">Food</NavLink>
           <NavLink to="/history">Consumption</NavLink>
         </nav>
         <div className="who">
@@ -65,6 +67,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/labs" element={<Labs />} />
           <Route path="/discharge" element={<Discharge />} />
+          <Route path="/food" element={<Food />} />
           <Route path="/history" element={<History />} />
           <Route path="/dashboard" element={<Navigate to="/" replace />} />
           <Route path="/trends" element={<Navigate to="/" replace />} />

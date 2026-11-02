@@ -14,6 +14,8 @@ const summaryRoutes = require('./routes/summary');
 const ngtRoutes = require('./routes/ngt');
 const labsRoutes = require('./routes/labs');
 const dischargeRoutes = require('./routes/discharge');
+const timelineRoutes = require('./routes/timeline');
+const foodRoutes = require('./routes/food');
 
 const PORT = Number(process.env.PORT || 3001);
 const CLIENT_DIST = path.resolve(__dirname, '../../client/dist');
@@ -23,7 +25,7 @@ async function main() {
 
   const app = express();
   app.disable('x-powered-by');
-  app.use(express.json());
+  app.use(express.json({ limit: '15mb' })); // meal photos arrive as data URLs
 
   const sessionStore = new MySQLStore(
     {
@@ -59,6 +61,8 @@ async function main() {
   app.use('/api/ngt', requireAuth, ngtRoutes);
   app.use('/api/labs', requireAuth, labsRoutes);
   app.use('/api/discharge', requireAuth, dischargeRoutes);
+  app.use('/api/timeline', requireAuth, timelineRoutes);
+  app.use('/api/food', requireAuth, foodRoutes);
 
   // Built frontend (npm run build in ../client) served from the same port.
   app.use(express.static(CLIENT_DIST, { maxAge: '1h' }));
