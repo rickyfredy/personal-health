@@ -933,23 +933,8 @@ tr.date-group td {
   background: rgba(171, 70, 96, 0.9);
 }
 
-.ph-del {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: rgba(23, 49, 42, 0.72);
-  color: #fff;
-  border: none;
-  cursor: pointer;
-  font-size: 12px;
-  line-height: 1;
-}
-
-.ph-del:hover {
-  background: var(--berry);
+.ph-meal.meal-breakfast {
+  background: rgba(78, 124, 148, 0.9);
 }
 
 /* ---------- responsive ---------- */

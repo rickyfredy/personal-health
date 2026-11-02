@@ -155,15 +155,16 @@ the timeline.
   imports (dedup by the export's record id), purely additive updates, no
   deletions. Export files contain personal identifiers and are git-ignored.
 
-## 5.5 Food report
+## 5.5 Food Report
 
-A **Food** page: meal photos (lunch / dinner / snack) of the recent weeks as
-a gallery — each photo overlaid with its date (dd-mm-yyyy) and a coloured
-meal label. A "Save a meal photo" form takes meal type, day & time and an
-image (uploaded from a phone camera roll); photos are filterable by period
-(last 30 / 60 / 90 days, last 1 year) and browsable 24 per page. Photos
-upload to the server (stored on disk, listed in `food_photos`) and are only
-served behind the login.
+A **Food Report** page (menu label "Food Report"): meal photos of the
+recent weeks as a gallery — each photo overlaid with its date (dd-mm-yyyy)
+and a coloured meal label (Breakfast / Lunch / Dinner / Snack). Photos are
+saved by the external dietary channel into the `meal_photos` table
+(`meal_type` enum, `photo_path` file path, `consumption_time` wall-clock
+meal moment); the app is a pure reader — it serves the photo bytes behind
+the login and renders the gallery. Filterable by period (last 30 / 60 / 90
+days, last 1 year), browsable 24 per page.
 
 ## 6. Data model
 
@@ -178,8 +179,10 @@ served behind the login.
   missing, matching the external channel's shape): `id, measurement DECIMAL(4,2)
   (tube size, nullable), consumption_time DATETIME (nullable), created_at
   DATETIME (nullable)`. Written by an external channel; the dashboard reads it.
-- `food_photos`: `id, meal, taken_at, stored_name, original_name (nullable),
-  created_at` — meal photos for the Food page (bytes on server disk).
+- `meal_photos` (read-only for the app; OWNED by the external dietary
+  channel, which created the table): `id, meal_type enum(breakfast|lunch|
+  dinner|snack), photo_path, consumption_time, created_at` — the Food
+  Report gallery reads it; photo files live in the channel's workspace.
 - HealthHub tables (added by bootstrap/ingest, see §5.4): `lab_reports`,
   `lab_result_rows`, `discharge_records` — with the export's own id as
   `ext_id` for dedupe; re-importing an export updates instead of duplicating.

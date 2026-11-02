@@ -38,7 +38,18 @@ store their full test-row tables; discharge summaries keep diagnoses,
 procedures, allergies, alerts and the medication text.
 
 ⚠️ Do NOT commit these export files — they contain personal identifiers.
-They are git-ignored (`*HealthHub*`).
+They are git-ignored (`/HealthHub-*`).
+
+## Food Report (dietary-assistant photos)
+
+The **Food Report** page reads the `meal_photos` table — written by the
+external channel (the dietary assistant uploads each meal photo): columns
+`meal_type` enum (breakfast / lunch / dinner / snack), `photo_path` (the
+photo file on this server), `consumption_time` (wall-clock meal moment),
+`created_at`. The app only READS — it never writes meal rows. It serves the
+photo bytes behind the login (`/api/food/photo/:id`), renders each photo
+overlaid with its date and meal label, and filters by the last 30 / 60 / 90
+days or 1 year.
 
 ## Quick start
 
@@ -138,6 +149,9 @@ Day/week/month grouping uses `APP_TIMEZONE` from `.env`.
 | GET    | `/api/labs`                   | Lab report list (`q` title filter, `abnormal=1`, `limit`, cap 1000) + totals |
 | GET    | `/api/labs/:id/rows`          | Full test-row table of one report |
 | GET    | `/api/discharge`              | Discharge summaries with parsed details; `limit` (cap 200) |
+| GET    | `/api/timeline`               | CRP results over time + distinct hospital admission/discharge moments (dashboard graph) |
+| GET    | `/api/food`                   | Meal photos from `meal_photos` (read-only; the dietary channel uploads them), newest first |
+| GET    | `/api/food/photo/:id`         | Image bytes for one photo (login required) |
 
 All non-auth endpoints require the session cookie; server-rendered list
 ordering is always `consumption_time DESC`.

@@ -227,8 +227,6 @@ export default function Dashboard() {
       </div>
 
       <div className="dash-grid">
-        <TimelineCard data={timeline} loading={tLoading} />
-
         <WeekMatrixCard
           matrix={matrix}
           matrixLoading={matrixLoading}
@@ -397,6 +395,8 @@ export default function Dashboard() {
               ))}
           </div>
         </div>
+
+        <TimelineCard data={timeline} loading={tLoading} />
       </div>
     </>
   );
@@ -405,14 +405,27 @@ export default function Dashboard() {
 /* care-timeline: CRP values over time with admission/discharge markers */
 
 function TimelineCard({ data, loading }) {
-  const points = (data?.crp || []).map((c) => ({
-    ts: c.ts,
-    value: c.value,
-    abnormal: c.abnormal,
-    title: c.title
-  }));
+  const [range, setRange] = useState('6'); // months to look back; '' = all
+  const cutoff = range
+    ? (() => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - Number(range));
+        return d.getTime();
+      })()
+    : null;
 
-  const all = [...points.map((p) => p.ts), ...(data?.admissions || []), ...(data?.discharges || [])];
+  const points = (data?.crp || [])
+    .filter((c) => !cutoff || c.ts >= cutoff)
+    .map((c) => ({
+      ts: c.ts,
+      value: c.value,
+      abnormal: c.abnormal,
+      title: c.title
+    }));
+  const admissions = (data?.admissions || []).filter((t) => !cutoff || t >= cutoff);
+  const discharges = (data?.discharges || []).filter((t) => !cutoff || t >= cutoff);
+
+  const all = [...points.map((p) => p.ts), ...admissions, ...discharges];
   const domain = all.length ? [Math.min(...all) - 864e5, Math.max(...all) + 864e5] : undefined;
   const monthTick = (t) => {
     const d = new Date(t);
@@ -423,14 +436,29 @@ function TimelineCard({ data, loading }) {
     <div className="chart-card wide">
       <div className="card-head">
         <h2>Care timeline</h2>
-        <div className="chipline">
-          <span className="chip" style={{ background: 'var(--amber-fill)', color: 'var(--amber)' }}>A · admitted</span>
-          <span className="chip">D · discharged</span>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <div className="chipline">
+            <span className="chip" style={{ background: 'var(--amber-fill)', color: 'var(--amber)' }}>A · admitted</span>
+            <span className="chip">D · discharged</span>
+          </div>
+          <select
+            className="select"
+            style={{ height: 30, padding: '2px 8px', fontSize: 13 }}
+            value={range}
+            onChange={(e) => setRange(e.target.value)}
+            aria-label="Timeline range"
+          >
+            <option value="3">Last 3 months</option>
+            <option value="6">Last 6 months</option>
+            <option value="9">Last 9 months</option>
+            <option value="12">Last 1 year</option>
+            <option value="">All</option>
+          </select>
         </div>
       </div>
       <div className="sub">
         {data
-          ? `C-Reactive Protein (mg/L) with hospital episodes marked · ${points.length} CRP results`
+          ? `C-Reactive Protein (mg/L) with hospital episodes marked · ${points.length} CRP results in range`
           : 'Loading…'}
       </div>
       <div className="fade-wrap" style={{ opacity: loading ? 0.45 : 1, height: 280 }}>
