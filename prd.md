@@ -146,6 +146,12 @@ Two more pages:
 
 The earlier dashboard mini-cards (lab/discharge totals) were removed and
 replaced by a **care-timeline graph** on the dashboard: C-Reactive Protein
+(values over time, line) with every hospital admission (A) and discharge
+(D) marked; the range control is a styled calendar **date-picker component**
+(custom popup: month navigation, single-day selection, Today shortcut,
+min/max clamping) with two instances — start & end — defaulting to the last
+6 months. Gallery photos on the Food Report page open a **lightbox** with
+the full original photo on click (Escape / backdrop / ✕ to close).
 values (mg/L) over time as a line, with every hospital admission (A, amber
 dashed) and discharge (D, green dashed) from the discharge data marked on
 the timeline.
