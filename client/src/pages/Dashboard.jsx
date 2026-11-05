@@ -10,6 +10,7 @@ import {
   YAxis
 } from 'recharts';
 import { api } from '../api';
+import DatePicker from '../components/DatePicker';
 import {
   Chart,
   DailyFeedsCard,
@@ -444,24 +445,8 @@ function TimelineCard({ data, loading }) {
             <span className="chip" style={{ background: 'var(--amber-fill)', color: 'var(--amber)' }}>A · admitted</span>
             <span className="chip">D · discharged</span>
           </div>
-          <input
-            type="date"
-            className="input"
-            style={{ height: 30, padding: '2px 8px', fontSize: 13 }}
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            max={to || undefined}
-            aria-label="Timeline start date"
-          />
-          <input
-            type="date"
-            className="input"
-            style={{ height: 30, padding: '2px 8px', fontSize: 13 }}
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            min={from || undefined}
-            aria-label="Timeline end date"
-          />
+          <DatePicker value={from} onChange={(v) => v && setFrom(v)} max={to || undefined} label="Start date" />
+          <DatePicker value={to} onChange={(v) => v && setTo(v)} min={from || undefined} label="End date" />
         </div>
       </div>
       <div className="sub">

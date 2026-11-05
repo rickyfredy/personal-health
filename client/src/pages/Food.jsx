@@ -24,10 +24,20 @@ export default function Food() {
   const [error, setError] = useState('');
   const [bucket, setBucket] = useState('30');
   const [page, setPage] = useState(1);
+  const [lightbox, setLightbox] = useState(null); // photo object, or null
 
   useEffect(() => {
     document.title = 'Callista · Food Report';
   }, []);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const esc = (e) => {
+      if (e.key === 'Escape') setLightbox(null);
+    };
+    document.addEventListener('keydown', esc);
+    return () => document.removeEventListener('keydown', esc);
+  }, [lightbox]);
 
   useEffect(() => {
     let live = true;
@@ -87,7 +97,13 @@ export default function Food() {
 
       <div className="food-grid">
         {slice.map((p) => (
-          <div className="photo-card" key={p.id}>
+          <button
+            type="button"
+            className="photo-card"
+            key={p.id}
+            onClick={() => setLightbox(p)}
+            title="Show full photo"
+          >
             <img
               src={`/api/food/photo/${p.id}`}
               alt={`${labelOf[p.meal] || 'Meal'} photo`}
@@ -101,9 +117,24 @@ export default function Food() {
               <span className="ph-date">{fmtDMY(p.taken_at) || fmtDMY(p.created_at)}</span>
               <span className={`ph-meal meal-${p.meal || 'snack'}`}>{labelOf[p.meal] || 'Meal'}</span>
             </div>
-          </div>
+          </button>
         ))}
       </div>
+
+      {lightbox && (
+        <div className="lightbox" onClick={() => setLightbox(null)} role="dialog" aria-modal="true" aria-label="Full photo">
+          <button type="button" className="lb-x" onClick={() => setLightbox(null)} aria-label="Close">✕</button>
+          <img
+            src={`/api/food/photo/${lightbox.id}`}
+            alt={`${labelOf[lightbox.meal] || 'Meal'} photo, full view`}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <div className="lb-caption" onClick={(e) => e.stopPropagation()}>
+            <span className="ph-date">{fmtDMY(lightbox.taken_at) || fmtDMY(lightbox.created_at)}</span>
+            <span className={`ph-meal meal-${lightbox.meal || 'snack'}`}>{labelOf[lightbox.meal] || 'Meal'}</span>
+          </div>
+        </div>
+      )}
 
       {filtered.length > PAGE_SIZE && (
         <div className="card" style={{ marginTop: 14, padding: '10px 16px' }}>
