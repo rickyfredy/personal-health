@@ -43,9 +43,10 @@ async function bootstrap() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 
-  // meal_photos (meal photos for the Food Report page) is owned by the same
-  // external channel (the dietary assistant) and already exists on the live
-  // database — the app only reads it, so it is NOT created here.
+  // meal_sessions + meal_photos (the Food Report tables: one row per eating
+  // session + one row per photo) are owned by the same external channel (the
+  // dietary assistant) and already exist on the live database — the app only
+  // reads them, so they are NOT created here.
 
   // Medical records imported from HealthHub exports (see ingest-healthhub.js).
   // ext_id = the export's dedupe key, so re-importing an export updates

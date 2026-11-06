@@ -165,12 +165,15 @@ the timeline.
 
 A **Food Report** page (menu label "Food Report"): meal photos of the
 recent weeks as a gallery — each photo overlaid with its date (dd-mm-yyyy)
-and a coloured meal label (Breakfast / Lunch / Dinner / Snack). Photos are
-saved by the external dietary channel into the `meal_photos` table
-(`meal_type` enum, `photo_path` file path, `consumption_time` wall-clock
-meal moment); the app is a pure reader — it serves the photo bytes behind
-the login and renders the gallery. Filterable by period (last 30 / 60 / 90
-days, last 1 year), browsable 24 per page.
+and a coloured meal label (Breakfast / Lunch / Dinner / Snack). The dietary
+channel saves sessions into `meal_sessions` (one row per eating session:
+`meal_type` enum, `consumption_time` wall-clock meal moment) and photos into
+`meal_photos` (one row **per image** — `session_id` FK → the session,
+`photo_path` file path); a session may carry several photos and the page
+shows every image as its own tile — no grouping. The app is a pure reader —
+it serves the photo bytes behind the login and renders the gallery.
+Filterable by period (last 30 / 60 / 90 days, last 1 year), browsable 24
+per page.
 
 ## 6. Data model
 
@@ -185,10 +188,14 @@ days, last 1 year), browsable 24 per page.
   missing, matching the external channel's shape): `id, measurement DECIMAL(4,2)
   (tube size, nullable), consumption_time DATETIME (nullable), created_at
   DATETIME (nullable)`. Written by an external channel; the dashboard reads it.
-- `meal_photos` (read-only for the app; OWNED by the external dietary
-  channel, which created the table): `id, meal_type enum(breakfast|lunch|
-  dinner|snack), photo_path, consumption_time, created_at` — the Food
-  Report gallery reads it; photo files live in the channel's workspace.
+- `meal_sessions` + `meal_photos` (read-only for the app; OWNED by the
+  external dietary channel, which created them 2026-11-06): `meal_sessions`
+  holds one row per eating session — `id, meal_type enum(breakfast|lunch|
+  dinner|snack), consumption_time, created_at`; `meal_photos` holds one row
+  per image — `id, session_id FK → meal_sessions (ON DELETE CASCADE),
+  photo_path, created_at`. A session can carry several photos; the Food
+  Report gallery reads both and shows every image. Photo files live in the
+  channel's workspace.
 - HealthHub tables (added by bootstrap/ingest, see §5.4): `lab_reports`,
   `lab_result_rows`, `discharge_records` — with the export's own id as
   `ext_id` for dedupe; re-importing an export updates instead of duplicating.
