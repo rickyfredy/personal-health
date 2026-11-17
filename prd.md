@@ -55,8 +55,10 @@ Primary user is the household caretaker (single admin user). Key scenarios:
 ### 5.1 Login
 
 - Default account `admin` / `admin`, created on first boot (from
-  `DEFAULT_USERNAME` / `DEFAULT_PASSWORD` in `.env`), password stored as a
-  bcrypt hash.
+  `DEFAULT_USERNAME` / `DEFAULT_PASSWORD` in `.env`), password stored as an
+  md5 hex hash (32 chars; ricky's explicit choice 2026-11-17 — keep that
+  password non-trivial, since md5 offers no brute-force resistance if the
+  DB leaks).
 - Session cookie (httpOnly, sameSite) valid for `SESSION_TTL_HOURS`
   (default 72), stored in MySQL so logins survive server restarts.
 - Wrong credentials return a single generic error that never reveals which
@@ -209,8 +211,9 @@ the household clock.
 ## 7. Architecture
 
 - **Backend** (`server/`): Node.js + Express. mysql2 connection pool
-  (`dateStrings: true`), express-session with a MySQL session store, bcryptjs
-  for passwords. REST API under `/api`: auth, consumptions (list with
+  (`dateStrings: true`), express-session with a MySQL session store, md5
+  password hashing (`server/src/password.js`, ricky's choice 2026-11-17).
+  REST API under `/api`: auth, consumptions (list with
   paging/search/filter, CRUD, move), summary/matrix, summary/feeds,
   summary/daily, plus `/api/consumptions/meta` for filter options.
 - **Frontend** (`client/`): React 18 + Vite SPA with react-router and
@@ -221,7 +224,8 @@ the household clock.
 
 ## 8. Non-functional requirements
 
-- Security: bcrypt-hashed passwords, httpOnly session cookies, auth guard on
+- Security: md5-hashed passwords (owner's explicit choice; default account's
+  password should stay non-trivial), httpOnly session cookies, auth guard on
   every non-auth route, generic login errors, parameterised SQL everywhere,
   no secrets in git (`.gitignore` covers `.env*` variants).
 - Performance: server-side paging and aggregation; personal-data volumes

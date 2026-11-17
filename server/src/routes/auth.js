@@ -1,6 +1,6 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
 const db = require('../db');
+const { verifyPassword } = require('../password');
 
 const router = express.Router();
 
@@ -18,7 +18,7 @@ router.post('/login', async (req, res, next) => {
     const user = rows[0];
 
     // Same generic message either way, so we don't reveal which field was wrong.
-    if (!user || !bcrypt.compareSync(String(password), user.password_hash)) {
+    if (!user || !verifyPassword(String(password), user.password_hash)) {
       return res.status(401).json({ error: 'Invalid username or password.' });
     }
 
