@@ -8,7 +8,7 @@ const labelOf = {
   dinner: 'Dinner',
   snack: 'Snack'
 };
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 100;
 const BUCKETS = [
   { v: '30', label: 'Last 30 days' },
   { v: '60', label: 'Last 60 days' },
@@ -42,7 +42,7 @@ export default function Food() {
   useEffect(() => {
     let live = true;
     api
-      .food({ limit: 500 })
+      .food({ limit: 2000 })
       .then((d) => live && setPhotos(d.photos))
       .catch((e) => live && setError(e.message));
     return () => {
@@ -142,7 +142,7 @@ export default function Food() {
             page={safePage}
             pages={pages}
             setPage={setPage}
-            info={`page ${safePage} of ${pages} · ${filtered.length} photo${filtered.length === 1 ? '' : 's'} · 24 per page`}
+            info={`page ${safePage} of ${pages} · ${filtered.length} photo${filtered.length === 1 ? '' : 's'} · ${PAGE_SIZE} per page`}
           />
         </div>
       )}

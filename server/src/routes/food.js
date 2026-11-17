@@ -19,7 +19,9 @@ const router = express.Router();
 
 router.get('/', async (req, res, next) => {
   try {
-    const limit = Math.min(500, Math.max(1, parseInt(req.query.limit, 10) || 500));
+    // cap raised to 2000 so client-side 100-per-page paging keeps seeing all
+    // images as history grows (rows are tiny metadata; photos come separately)
+    const limit = Math.min(2000, Math.max(1, parseInt(req.query.limit, 10) || 2000));
     const [rows] = await db.query(
       `SELECT p.id, p.session_id, s.meal_type AS meal, s.consumption_time AS taken_at, p.created_at
        FROM meal_photos p
