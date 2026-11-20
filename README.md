@@ -45,12 +45,19 @@ They are git-ignored (`/HealthHub-*`).
 The **Food Report** page reads two tables owned by the external dietary
 channel: `meal_sessions` (one row per eating session — `meal_type` enum
 breakfast / lunch / dinner / snack, `consumption_time` = wall-clock meal
-moment) and `meal_photos` (one row **per image** — `session_id` → the
-session, `photo_path` = the photo file on this server). A session can carry
-several photos; the page shows every image as its own tile, each tagged with
-its session's day and meal label. The app only READS — it never writes these
-tables. It serves the photo bytes behind the login (`/api/food/photo/:id`)
-and filters by the last 30 / 60 / 90 days or 1 year.
+moment) and `meal_photos` (one row **per media file** — `session_id` → the
+session, `photo_path` = the photo or video file on this server). A session
+can carry several photos; the page shows every file as its own tile, each
+tagged with its session's day and meal label. Tiles use
+`/api/food/thumb/:id` — images pass through, **videos** get an
+ffmpeg-extracted frame (~1/3 into the clip, cached in `server/thumbs/`,
+git-ignored; needs `ffmpeg`/`ffprobe` on the server). A clicked tile opens
+the lightbox: a `<video controls>` player for videos (play/pause/seek
+streamed with HTTP Range) or the full photo, with **‹ / › navigation**
+(and ←/→ keys) across the filtered list plus an Escape-to-close. The app
+only READS — it never writes these tables. It serves the file bytes behind
+the login (`/api/food/photo/:id`) and filters by the last 30 / 60 / 90 days
+or 1 year.
 
 ## Quick start
 

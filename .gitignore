@@ -13,6 +13,7 @@
 /HealthHub-*.txt
 /data/
 downloads/
+server/thumbs/
 server/uploads/
 
 # ── dependencies & build output ───────────────────────────────────────────────

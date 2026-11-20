@@ -91,7 +91,7 @@ pattern for any new date math — do not add real TZ conversion.
 | `users`, `seed_meta`, `lab_reports`, `lab_result_rows`, `discharge_records` | bootstrap / seed / ingest | app |
 | `ngt_history` | bootstrap (shape only) | external channel (app reads) |
 | `meal_sessions` | dietary channel (not created here) | external channel (app reads) |
-| `meal_photos` | dietary channel (session_id FK → meal_sessions) | external channel (app reads; serves photo bytes at `/api/food/photo/:id`); one row PER image |
+| `meal_photos` | dietary channel (session_id FK → meal_sessions) | external channel (app reads; serves media at `/api/food/photo/:id` — images + videos, and ffmpeg thumbnails at `/api/food/thumb/:id`, frames cached in git-ignored `server/thumbs/`); one row PER file |
 
 ## Where it runs
 

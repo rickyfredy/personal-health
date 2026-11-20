@@ -24,20 +24,11 @@ export default function Food() {
   const [error, setError] = useState('');
   const [bucket, setBucket] = useState('30');
   const [page, setPage] = useState(1);
-  const [lightbox, setLightbox] = useState(null); // photo object, or null
+  const [lightbox, setLightbox] = useState(null); // index into `filtered`, or null
 
   useEffect(() => {
     document.title = 'Callista · Food Report';
   }, []);
-
-  useEffect(() => {
-    if (!lightbox) return;
-    const esc = (e) => {
-      if (e.key === 'Escape') setLightbox(null);
-    };
-    document.addEventListener('keydown', esc);
-    return () => document.removeEventListener('keydown', esc);
-  }, [lightbox]);
 
   useEffect(() => {
     let live = true;
@@ -61,6 +52,28 @@ export default function Food() {
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, pages);
   const slice = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const current = lightbox !== null ? filtered[lightbox] : null;
+
+  // Lightbox navigation: prev/next across the whole filtered list; when the
+  // move crosses a page boundary the pager follows so the grid stays in sync.
+  function go(dir) {
+    if (lightbox === null) return;
+    const n = lightbox + dir;
+    if (n < 0 || n >= filtered.length) return;
+    setLightbox(n);
+    setPage(Math.floor(n / PAGE_SIZE) + 1);
+  }
+
+  useEffect(() => {
+    if (lightbox === null) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setLightbox(null);
+      else if (e.key === 'ArrowLeft') go(-1);
+      else if (e.key === 'ArrowRight') go(1);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [lightbox, filtered]);
 
   return (
     <>
@@ -69,7 +82,7 @@ export default function Food() {
           <h1>Food Report</h1>
           <p className="lede">
             {photos
-              ? `${photos.length} meal photo${photos.length === 1 ? '' : 's'} saved — each is tagged with its day and meal.`
+              ? `${photos.length} entr${photos.length === 1 ? 'y' : 'ies'} (photos & videos) saved — each is tagged with its day and meal.`
               : 'Loading…'}
           </p>
         </div>
@@ -82,7 +95,7 @@ export default function Food() {
           ))}
         </select>
         <span style={{ color: 'var(--ink-faint)', fontSize: 13 }}>
-          {photos ? `${filtered.length} photo${filtered.length === 1 ? '' : 's'} in range` : ''}
+          {photos ? `${filtered.length} in range` : ''}
         </span>
       </div>
 
@@ -90,8 +103,8 @@ export default function Food() {
 
       {photos && filtered.length === 0 && (
         <div className="empty">
-          <div className="big">No meal photos in this period</div>
-          <div>Photos arrive from the dietary assistant and appear here as they are saved.</div>
+          <div className="big">No meal media in this period</div>
+          <div>Photos and videos arrive from the dietary assistant and appear here as they are saved.</div>
         </div>
       )}
 
@@ -101,18 +114,19 @@ export default function Food() {
             type="button"
             className="photo-card"
             key={p.id}
-            onClick={() => setLightbox(p)}
+            onClick={() => setLightbox(filtered.indexOf(p))}
             title="Show full photo"
           >
             <img
-              src={`/api/food/photo/${p.id}`}
-              alt={`${labelOf[p.meal] || 'Meal'} photo`}
+              src={`/api/food/thumb/${p.id}`}
+              alt={`${labelOf[p.meal] || 'Meal'} ${p.media === 'video' ? 'video' : 'photo'}`}
               loading="lazy"
               onError={(e) => {
                 e.currentTarget.onerror = null;
                 e.currentTarget.src = BLANK;
               }}
             />
+            {p.media === 'video' && <span className="video-badge">▶ Video</span>}
             <div className="photo-overlay">
               <span className="ph-date">{fmtDMY(p.taken_at) || fmtDMY(p.created_at)}</span>
               <span className={`ph-meal meal-${p.meal || 'snack'}`}>{labelOf[p.meal] || 'Meal'}</span>
@@ -121,17 +135,48 @@ export default function Food() {
         ))}
       </div>
 
-      {lightbox && (
-        <div className="lightbox" onClick={() => setLightbox(null)} role="dialog" aria-modal="true" aria-label="Full photo">
+      {current && (
+        <div className="lightbox" onClick={() => setLightbox(null)} role="dialog" aria-modal="true" aria-label="Full media viewer">
           <button type="button" className="lb-x" onClick={() => setLightbox(null)} aria-label="Close">✕</button>
-          <img
-            src={`/api/food/photo/${lightbox.id}`}
-            alt={`${labelOf[lightbox.meal] || 'Meal'} photo, full view`}
-            onClick={(e) => e.stopPropagation()}
-          />
+          <button
+            type="button"
+            className="lb-arrow lb-prev"
+            aria-label="Previous"
+            disabled={lightbox === 0}
+            onClick={(e) => { e.stopPropagation(); go(-1); }}
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            className="lb-arrow lb-next"
+            aria-label="Next"
+            disabled={lightbox === filtered.length - 1}
+            onClick={(e) => { e.stopPropagation(); go(1); }}
+          >
+            ›
+          </button>
+          {current.media === 'video' ? (
+            <video
+              key={current.id}
+              src={`/api/food/photo/${current.id}`}
+              controls
+              playsInline
+              preload="metadata"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <img
+              key={current.id}
+              src={`/api/food/photo/${current.id}`}
+              alt={`${labelOf[current.meal] || 'Meal'} photo, full view`}
+              onClick={(e) => e.stopPropagation()}
+            />
+          )}
           <div className="lb-caption" onClick={(e) => e.stopPropagation()}>
-            <span className="ph-date">{fmtDMY(lightbox.taken_at) || fmtDMY(lightbox.created_at)}</span>
-            <span className={`ph-meal meal-${lightbox.meal || 'snack'}`}>{labelOf[lightbox.meal] || 'Meal'}</span>
+            <span className="ph-date">{fmtDMY(current.taken_at) || fmtDMY(current.created_at)}</span>
+            <span className={`ph-meal meal-${current.meal || 'snack'}`}>{labelOf[current.meal] || 'Meal'}</span>
+            <span className="lb-count">{lightbox + 1} / {filtered.length}</span>
           </div>
         </div>
       )}
